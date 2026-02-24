@@ -1,0 +1,6 @@
+{
+  "port": 8080,
+  "screens": [
+    { "screenId": "1", "title": "System Status", "generator": { "type": "system" } }
+  ]
+}
