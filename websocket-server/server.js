@@ -77,8 +77,6 @@ server.bind(PORT);
 
 
 const pushInterval = setInterval(() => {
-    if (clients.size === 0) return;
-
     const payloadObj = telemetry.createPayload();
 
     const statusMap = { 'OFFLINE': 0, 'IDLE': 1, 'ONLINE': 2 };
@@ -105,10 +103,28 @@ const pushInterval = setInterval(() => {
     buf.writeUInt16BE(Math.min(memNum, 100), offset); offset += 2;
 
     try {
-        console.log('sending buf hex:', buf.toString('hex'));
+        const headerByte = buf.readUInt8(0);
+        const statusCode = (headerByte >> 2) & 0x03;
+        const connCode = headerByte & 0x03;
+        const modeValue = buf.readUInt16BE(1);
+        const cpuValue = buf.readUInt16BE(3);
+        const memValue = buf.readUInt16BE(5);
+        
+        console.log('\n=== BINARY PAYLOAD STRUCTURE ===');
+        console.log(`Byte 0:   [Header] = 0x${buf.readUInt8(0).toString(16).padStart(2, '0')} (status=${statusCode}, conn=${connCode})`);
+        console.log(`Byte 1-2: [Mode]   = 0x${modeValue.toString(16).padStart(4, '0')} (${modeValue})`);
+        console.log(`Byte 3-4: [CPU]    = 0x${cpuValue.toString(16).padStart(4, '0')} (${cpuValue}%)`);
+        console.log(`Byte 5-6: [Memory] = 0x${memValue.toString(16).padStart(4, '0')} (${memValue}%)`);
+        console.log(`Full Hex: ${buf.toString('hex')}`);
+        console.log('================================\n');
     } catch (e) {
         console.log('sending buf (length): 7 bytes');
     }
+
+    if (clients.size === 0) {
+        return;
+    }
+
     for (const [key, c] of clients.entries()) {
         server.send(buf, c.port, c.address, (err) => {
             if (err) {
