@@ -37,7 +37,6 @@ class WebSocketService {
       }
     });
 
-    // auto-register so server knows where to send pushes
     sendRegister();
   }
 

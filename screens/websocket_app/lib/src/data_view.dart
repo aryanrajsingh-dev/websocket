@@ -13,7 +13,6 @@ class DataView extends StatelessWidget {
         return const Center(child: CircularProgressIndicator());
       }
       final dataMap = snapshot.data!;
-      // debug: show any non-data messages as well
       debugPrint('DataView: snapshot -> $dataMap');
       if (dataMap['type'] != 'data') return Center(child: Text('No data yet (received: ${dataMap['type']})'));
       final dto = DataDto.fromJson(dataMap);

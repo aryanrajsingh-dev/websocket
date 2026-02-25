@@ -81,43 +81,33 @@ const pushInterval = setInterval(() => {
 
     const payloadObj = telemetry.createPayload();
 
-    const pairs = Object.entries(payloadObj).map(([k, v]) => {
-        const keyBuf = Buffer.from(String(k));
-        const valStr = JSON.stringify(v);
-        const valBuf = Buffer.from(valStr);
-        return { keyBuf, valBuf };
-    });
+    const statusMap = { 'OFFLINE': 0, 'IDLE': 1, 'ONLINE': 2 };
+    const connectionMap = { 'DISCONNECTED': 0, 'CONNECTED': 1 };
+    const modeMap = { 'MANUAL': 0, 'AUTO': 1 };
 
-    const id = Buffer.from('1');
-
-        let total = 1 + 8 + 1 + id.length + 1;
-    for (const p of pairs) {
-        total += 1 + p.keyBuf.length + 2 + p.valBuf.length;
-    }
-
-    const buf = Buffer.alloc(total);
+    const buf = Buffer.alloc(7);
     let offset = 0;
-    buf.writeUInt8(2, offset); offset += 1;
 
-    buf.writeUInt32BE(0, offset); offset += 4;
-    buf.writeUInt32BE(0, offset); offset += 4;
+    const status = payloadObj['systemStatus'] || 'OFFLINE';
+    const conn = payloadObj['connectionState'] || 'DISCONNECTED';
+    const headerByte = ((statusMap[status] || 0) << 2) | (connectionMap[conn] || 0);
+    buf.writeUInt8(headerByte, offset); offset += 1;
 
-    buf.writeUInt8(id.length, offset); offset += 1;
-    id.copy(buf, offset); offset += id.length;
+    const mode = payloadObj['activeMode'] || 'MANUAL';
+    buf.writeUInt16BE(modeMap[mode] || 0, offset); offset += 2;
 
-    buf.writeUInt8(pairs.length, offset); offset += 1;
+    const cpuStr = payloadObj['cpuUsage'] || '0%';
+    const cpuNum = parseInt(cpuStr);
+    buf.writeUInt16BE(Math.min(cpuNum, 100), offset); offset += 2;
 
-    for (const p of pairs) {
-        buf.writeUInt8(p.keyBuf.length, offset); offset += 1;
-        p.keyBuf.copy(buf, offset); offset += p.keyBuf.length;
-        buf.writeUInt16BE(p.valBuf.length, offset); offset += 2;
-        p.valBuf.copy(buf, offset); offset += p.valBuf.length;
-    }
+    const memStr = payloadObj['memoryUsage'] || '0%';
+    const memNum = parseInt(memStr);
+    buf.writeUInt16BE(Math.min(memNum, 100), offset); offset += 2;
 
     try {
         console.log('sending buf hex:', buf.toString('hex'));
     } catch (e) {
-        console.log('sending buf (length):', buf.length);
+        console.log('sending buf (length): 7 bytes');
     }
     for (const [key, c] of clients.entries()) {
         server.send(buf, c.port, c.address, (err) => {
@@ -127,7 +117,7 @@ const pushInterval = setInterval(() => {
             }
         });
     }
-    console.log('Sent custom binary payload to', clients.size, 'client(s):', buf.length, 'bytes');
+    console.log('Sent binary payload to', clients.size, 'client(s): 7 bytes');
 }, 1000);
 
 process.on('SIGINT', () => {

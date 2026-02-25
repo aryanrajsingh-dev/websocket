@@ -4,7 +4,7 @@ const telemetry = {
     CONNECTION_STATE: 'connectionState',
     ACTIVE_MODE: 'activeMode',
     CPU_USAGE: 'cpuUsage',
-    LAST_UPDATED: 'lastUpdated',
+    MEMORY_USAGE: 'memoryUsage',
   },
   VALUES: {
     SYSTEM_STATUS: ['ONLINE', 'IDLE'],
@@ -17,7 +17,7 @@ const telemetry = {
       [this.KEYS.CONNECTION_STATE]: 'CONNECTED',
       [this.KEYS.ACTIVE_MODE]: Math.random() > 0.5 ? 'AUTO' : 'MANUAL',
       [this.KEYS.CPU_USAGE]: Math.floor(Math.random() * 100) + '%',
-      [this.KEYS.LAST_UPDATED]: new Date().toISOString(),
+      [this.KEYS.MEMORY_USAGE]: Math.floor(Math.random() * 100) + '%',
     };
   },
 };

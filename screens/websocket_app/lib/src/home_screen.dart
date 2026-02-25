@@ -34,13 +34,10 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     }
 
     await _ws.connect(_wsUrl);
-    // Single-screen mode: server will push data for the single screen.
     setState(() {
       _screens = [ScreenDto(screenId: '1', title: 'System Status')];
     });
   }
-
-  // single-screen mode: no tab or screen request helpers needed
 
   @override
   void dispose() {

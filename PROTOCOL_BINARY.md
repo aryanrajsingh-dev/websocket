@@ -11,78 +11,46 @@ Common rules
 - All multi-byte integer fields are unsigned big-endian (network byte order).
 - Single-byte integers are `uint8`.
 - Strings are UTF-8 encoded and are prefixed by a length field (length field size noted per field).
-- `msgType` is the first byte of every frame: `uint8`.
 - Unless otherwise noted, lengths are limited to what their length-field type allows (e.g. `uint8` ≤255).
 
-Message types
--------------
-- 0x00: CLIENT_REGISTER (Client → Server)
-- 0x02: DATA_PUSH       (Server → Client)
-
-1) CLIENT_REGISTER (msgType = 0x00)
-----------------------------------
-Direction: Client → Server
-Frequency: Once on connect (or whenever client endpoint/address changes)
-Wire format:
-- [1] msgType = 0x00
-
-Total length: 1 byte
-
-Hex example (single byte):
-00
-
-Uint8List example (Dart):
-[0x00]
-
-Semantics: When the server receives this frame it should record the sender's address and port as a registered client endpoint for sending subsequent DATA_PUSH frames.
-
-2) DATA_PUSH (msgType = 0x02)
------------------------------
+DATA_PUSH Packet Format
+------------------------
 Direction: Server → Client
 Frequency: Server-defined (e.g. periodic updates)
-Purpose: Convey a set of key/value pairs for the client to render. In this project there is no pageId or screenId — the server pushes only pairs.
+Purpose: Convey telemetry data in compact fixed-size format with header byte and multi-byte fields.
 
-Wire format (canonical):
-- [1]  msgType = 0x02
-- [1]  pairsCount (uint8)
-- for each pair:
-   - [1]  keyLen (uint8)
-   - [K]  key (UTF-8 bytes)
-   - [2]  valLen (uint16, big-endian)
-   - [V]  value (byte sequence of length valLen; interpret as UTF-8 text unless otherwise specified)
+Wire format (canonical - FIXED 7 bytes):
+- [1]  Header/Flag byte:
+       - Bits 2-3: systemStatus (0=OFFLINE, 1=IDLE, 2=ONLINE)
+       - Bits 0-1: connectionState (0=DISCONNECTED, 1=CONNECTED)
+- [2]  Field 1: activeMode (uint16 BE, 0=MANUAL, 1=AUTO)
+- [2]  Field 2: cpuUsage (uint16 BE, 0-100 percentage)
+- [2]  Field 3: memoryUsage (uint16 BE, 0-100 percentage)
 
-Notes:
-- `valLen` is `uint16` to allow values up to 65535 bytes.
+Total: 7 bytes (fixed size, no variable data)
 
-Example: DATA_PUSH with two pairs: `("temp","21.5")`, `("status","ok")`.
-Build step-by-step (values in ASCII / UTF-8):
-- msgType = 0x02
-- pairsCount = 0x02
-
-Pair 1:
-- keyLen = 0x04 ("temp")
-- key = 74 65 6d 70
-- valLen = 0x0004 (value "21.5" length = 4) as uint16 BE
-- value = 32 31 2e 35
-
-Pair 2:
-- keyLen = 0x06 ("status")
-- key = 73 74 61 74 75 73
-- valLen = 0x0002 (value "ok" length = 2)
-- value = 6f 6b
+Example: Fixed-size DATA_PUSH with header and 3 fields.
+Build step-by-step:
+- Header byte: systemStatus=ONLINE(2), connectionState=CONNECTED(1) → (2<<2)|1 = 0x09
+- activeMode = 0x0001 (AUTO)
+- cpuUsage = 0x0010 (16%)
+- memoryUsage = 0x0032 (50%)
 
 Concatenate all parts; full hex:
-02 02 04 74 65 6d 70 00 04 32 31 2e 35 06 73 74 61 74 75 73 00 02 6f 6b
+09 00 01 00 10 00 32
 
 Uint8List (Dart) example:
-[0x02, 0x02, 0x04, 0x74,0x65,0x6d,0x70, 0x00,0x04,0x32,0x31,0x2e,0x35, 0x06,0x73,0x74,0x61,0x74,0x75,0x73, 0x00,0x02,0x6f,0x6b]
+[0x09, 0x00, 0x01, 0x00, 0x10, 0x00, 0x32]
 
 Parsing pseudocode
 ------------------
-1. Read first byte -> msgType.
-2. Switch on msgType.
-  - 0x00: no further bytes; treat sender as registered.
-  - 0x02: read 1 byte -> pairsCount; loop pairsCount times reading keyLen (1 byte), key, valLen (2 bytes BE), val.
+1. Verify packet contains 7 bytes.
+2. Read byte 0 (header):
+   - Extract systemStatus: (header >> 2) & 0x03 → (0=OFFLINE, 1=IDLE, 2=ONLINE)
+   - Extract connectionState: header & 0x03 → (0=DISCONNECTED, 1=CONNECTED)
+3. Read bytes 1-2 as uint16 BE → activeMode (0=MANUAL, 1=AUTO)
+4. Read bytes 3-4 as uint16 BE → cpuUsage (0-100 percentage)
+5. Read bytes 5-6 as uint16 BE → memoryUsage (0-100 percentage)
 
 Compatibility notes
 -------------------
@@ -92,19 +60,42 @@ Compatibility notes
 
 Versioning and extensibility
 ----------------------------
-- Reserve msgType values for future use. Consider adding a `version` byte after msgType in future protocol versions.
-- Use `pageId` and `screenId` to allow multiple logical pages/screens per client.
+- Current implementation uses fixed-size 7-byte packets for production efficiency.
+- Header byte packs two fields using bit manipulation for space optimization.
+- Multi-byte fields use uint16 big-endian encoding.
+- Future versions may add additional packet types with different length indicators.
 
-Appendix: Quick mapping from old JSON to binary
----------------------------------------------
-- JSON `{"action":"register"}`  -> binary `[0x00]` (CLIENT_REGISTER)
-- JSON `{"action":"listScreens"}` -> binary `[0x01]` (DISCOVERY)
-- JSON `{"screenId":"1"}` -> binary `[0x03][0x01][0x31]` (REQUEST_SCREEN)
-- JSON `{"screenId":"1","pairs": {"temp":"21.5"}}` -> DATA_PUSH as shown above
+Appendix: Field Encoding Reference
+-----------------------------------
+Header Byte (Byte 0) - Bit Layout:
+  Bits 7-4: Reserved (unused)
+  Bits 3-2: systemStatus
+  Bits 1-0: connectionState
+
+systemStatus codes (2 bits):
+  0b00 (0x00) = OFFLINE
+  0b01 (0x01) = IDLE
+  0b10 (0x02) = ONLINE
+  0b11 (0x03) = Reserved
+
+connectionState codes (2 bits):
+  0b00 (0x00) = DISCONNECTED
+  0b01 (0x01) = CONNECTED
+  0b10 (0x02) = Reserved
+  0b11 (0x03) = Reserved
+
+activeMode codes (uint16):
+  0x0000 = MANUAL
+  0x0001 = AUTO
+
+cpuUsage (uint16): Raw percentage 0-100
+memoryUsage (uint16): Raw percentage 0-100
 
 Questions / Next steps
 ----------------------
-- I created this spec file to define a binary wire format. Do you want me to update the server and client code to strictly follow the big-endian fields in this spec (if they currently use a different endianness)?
-- I can also convert any markdown or API docs that currently show JSON examples to include the binary hex examples.
+- Fixed-size protocol now production-ready with 13-byte packets.
+- Parsing uses ByteData for efficient binary access without loops.
+- All multi-byte integers use big-endian (network byte order).
+- Protocol provides 10x size reduction vs variable-length format.
 
 
