@@ -37,4 +37,7 @@ void _handleTypedMessage(Map<String, dynamic> msg) {
     }
   print('');
   }
+  catch (e) {
+    print('Failed to handle message: $e');
+  }
 }
