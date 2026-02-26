@@ -36,3 +36,5 @@ void _handleTypedMessage(Map<String, dynamic> msg) {
       print('  CPU: ${msg['cpuUsage']}');
     }
   print('');
+  }
+}
