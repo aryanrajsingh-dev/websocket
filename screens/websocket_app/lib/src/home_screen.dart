@@ -1,9 +1,11 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'models/screen_dto.dart';
 import 'ws_service.dart';
-import 'data_view.dart';
+import 'widgets/top_header.dart';
+import 'widgets/left_sidebar.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -11,17 +13,25 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMixin {
+class _HomeScreenState extends State<HomeScreen> {
   final WebSocketService _ws = WebSocketService();
-  List<ScreenDto> _screens = [];
-  TabController? _tabs;
-  String? _errorMessage;
   String _wsUrl = 'ws://localhost:8080';
+  String _selectedMenu = 'SYS';
+  String _mode = 'SAFE HOLD';
+  Duration _upTime = const Duration(hours: 0, minutes: 2, seconds: 17);
+  bool _wifiConnected = true;
+  double _batteryLevel = 0.15;
+  Timer? _timer;
 
   @override
   void initState() {
     super.initState();
     _init();
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      setState(() {
+        _upTime += const Duration(seconds: 1);
+      });
+    });
   }
 
   Future<void> _init() async {
@@ -32,38 +42,63 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     } catch (e) {
       debugPrint('Failed to load config asset: $e');
     }
-
     await _ws.connect(_wsUrl);
-    setState(() {
-      _screens = [ScreenDto(screenId: '1', title: 'System Status')];
-    });
   }
 
   @override
   void dispose() {
-    if (_tabs != null) {
-      _tabs!.dispose();
-    }
+    _timer?.cancel();
     _ws.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final hasTabs = _tabs != null;
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Screens'),
-        bottom: hasTabs ? TabBar(controller: _tabs, tabs: _screens.map((s) => Tab(text: s.title)).toList()) : null,
+      backgroundColor: Colors.black,
+      body: Column(
+        children: [
+          TopHeader(
+            mode: _mode,
+            upTime: _upTime,
+            wifiConnected: _wifiConnected,
+            batteryLevel: _batteryLevel,
+          ),
+          Expanded(
+            child: Row(
+              children: [
+                LeftSidebar(
+                  selectedMenu: _selectedMenu,
+                  onMenuSelected: (menu) {
+                    setState(() {
+                      _selectedMenu = menu;
+                    });
+                  },
+                ),
+                Expanded(
+                  child: _buildMainContent(),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
-      backgroundColor: Colors.lightBlue[50],
-      body: _errorMessage != null
-          ? Center(child: Text(_errorMessage!, style: const TextStyle(fontSize: 16, color: Colors.red)))
-          : (_screens.isEmpty
-              ? const Center(child: CircularProgressIndicator())
-              : (hasTabs
-                  ? TabBarView(controller: _tabs, children: _screens.map((s) => DataView(stream: _ws.rawStream)).toList())
-                  : DataView(stream: _ws.rawStream))),
+    );
+  }
+
+  Widget _buildMainContent() {
+    return Container(
+      color: Colors.black,
+      child: Center(
+        child: Text(
+          '$_selectedMenu Screen',
+          style: const TextStyle(
+            color: Colors.cyan,
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
     );
   }
 }
