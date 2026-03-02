@@ -67,12 +67,16 @@ class CpuCard extends StatelessWidget {
                     duration: const Duration(milliseconds: 600),
                     curve: Curves.easeOutCubic,
                     builder: (context, value, _) {
+                      final ringColor = _cpuUsageColor(clamped.toInt());
                       return Stack(
                         alignment: Alignment.center,
                         children: [
                           SizedBox.expand(
                             child: CustomPaint(
-                              painter: _CpuRingPainter(progress: value),
+                              painter: _CpuRingPainter(
+                                progress: value,
+                                color: ringColor,
+                              ),
                             ),
                           ),
                           Text(
@@ -98,9 +102,10 @@ class CpuCard extends StatelessWidget {
 }
 
 class _CpuRingPainter extends CustomPainter {
-  final double progress; // 0..1
+  final double progress;
+  final Color color;
 
-  _CpuRingPainter({required this.progress});
+  _CpuRingPainter({required this.progress, required this.color});
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -120,9 +125,9 @@ class _CpuRingPainter extends CustomPainter {
     final gradient = SweepGradient(
       startAngle: -3.14159 / 2,
       endAngle: 3 * 3.14159 / 2,
-      colors: const [
-        AppTheme.accentCyan,
-        AppTheme.accentCyanDark,
+      colors: [
+        color.withOpacity(0.5),
+        color,
       ],
     );
 
@@ -144,5 +149,15 @@ class _CpuRingPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _CpuRingPainter oldDelegate) =>
-      oldDelegate.progress != progress;
+      oldDelegate.progress != progress || oldDelegate.color != color;
+}
+
+Color _cpuUsageColor(int percent) {
+  if (percent < 50) {
+    return Colors.greenAccent;
+  }
+  if (percent < 80) {
+    return Colors.orangeAccent;
+  }
+  return Colors.redAccent;
 }
