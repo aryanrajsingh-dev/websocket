@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import '../utils/app_theme.dart';
 
 class MemoryCard extends StatelessWidget {
-  final int memoryUsage; // percent 0-100
+  final int memoryUsage;
   final double totalMemoryGB;
 
   const MemoryCard({
