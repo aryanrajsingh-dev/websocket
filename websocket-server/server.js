@@ -138,15 +138,17 @@ const pushInterval = setInterval(() => {
         const memValue = buf.readUInt16BE(5);
         const storagePct = buf.readUInt8(7);
         const signalDBm = buf.readInt8(8);
+        const extSlice = buf.slice(9);
+        const extHex = extSlice.toString('hex');
         
         console.log('\n=== BINARY PAYLOAD STRUCTURE ===');
         console.log(`Byte 0:   [Header]     = 0x${buf.readUInt8(0).toString(16).padStart(2, '0')} (status=${statusCode}, conn=${connCode})`);
         console.log(`Byte 1-2: [Mode]       = 0x${modeValue.toString(16).padStart(4, '0')} (${modeValue})`);
         console.log(`Byte 3-4: [CPU]        = 0x${cpuValue.toString(16).padStart(4, '0')} (${cpuValue}%)`);
         console.log(`Byte 5-6: [Memory]     = 0x${memValue.toString(16).padStart(4, '0')} (${memValue}%)`);
-        console.log(`Byte 7:   [Storage]    = ${storagePct}%`);
-        console.log(`Byte 8:   [Signal]     = ${signalDBm} dBm`);
-        console.log(`Byte 9+:  [Ext Str]    = ${internalTemp}, ${ipAddress}, ${firmwareVersion}`);
+        console.log(`Byte 7:   [Storage]    = 0x${storagePct.toString(16).padStart(2, '0')} (${storagePct}%)`);
+        console.log(`Byte 8:   [Signal]     = 0x${(signalDBm & 0xff).toString(16).padStart(2, '0')} (${signalDBm} dBm)`);
+        console.log(`Byte 9+:  [Ext Raw]    = 0x${extHex}`);
         console.log(`Total Size: ${totalSize} bytes`);
         console.log(`Full Hex: ${buf.toString('hex')}`);
         console.log('================================\n');
