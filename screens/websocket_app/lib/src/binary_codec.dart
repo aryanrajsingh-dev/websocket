@@ -18,6 +18,11 @@ class BinaryCodec {
         'activeMode': packet.activeMode,
         'cpuUsage': packet.cpuUsage,
         'memoryUsage': packet.memoryUsage,
+        'storagePercent': packet.storagePercent,
+        'internalTemp': packet.internalTemp,
+        'ipAddress': packet.ipAddress,
+        'signalStrength': packet.signalStrength,
+        'firmwareVersion': packet.firmwareVersion,
       };
     } catch (e, stack) {
       return {

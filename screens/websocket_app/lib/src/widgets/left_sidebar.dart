@@ -14,44 +14,48 @@ class LeftSidebar extends StatelessWidget {
   Widget build(BuildContext context) {
     final menuItems = [
       'SYS',
-      'DRIVE',
-      'POWER',
-      'COMPUTE',
-      'SENSOR',
-      'COM',
-      'ALERTS',
-      'PAYLOAD',
     ];
 
-    return Container(
-      width: 200,
-      decoration: BoxDecoration(
-        color: Colors.black,
-        border: Border(
-          right: BorderSide(color: Colors.cyan.withOpacity(0.5), width: 1),
-        ),
-      ),
-      child: ListView.builder(
-        padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 15),
-        itemCount: menuItems.length,
-        itemBuilder: (context, index) {
-          final item = menuItems[index];
-          final isSelected = item == selectedMenu;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isCompact = constraints.maxWidth < 150;
+        
+        return Container(
+          decoration: BoxDecoration(
+            color: Colors.black,
+            border: Border(
+              right: BorderSide(color: Colors.cyan.withOpacity(0.5), width: 1),
+            ),
+          ),
+          child: ListView.builder(
+            padding: EdgeInsets.symmetric(
+              vertical: 20,
+              horizontal: isCompact ? 8 : 15,
+            ),
+            itemCount: menuItems.length,
+            itemBuilder: (context, index) {
+              final item = menuItems[index];
+              final isSelected = item == selectedMenu;
 
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 15),
-            child: _buildMenuButton(item, isSelected),
-          );
-        },
-      ),
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 15),
+                child: _buildMenuButton(item, isSelected, isCompact),
+              );
+            },
+          ),
+        );
+      },
     );
   }
 
-  Widget _buildMenuButton(String label, bool isSelected) {
+  Widget _buildMenuButton(String label, bool isSelected, bool isCompact) {
     return InkWell(
       onTap: () => onMenuSelected(label),
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 15),
+        padding: EdgeInsets.symmetric(
+          vertical: isCompact ? 12 : 15,
+          horizontal: isCompact ? 4 : 0,
+        ),
         decoration: BoxDecoration(
           color: isSelected ? Colors.cyan.withOpacity(0.3) : Colors.transparent,
           border: Border.all(
@@ -65,9 +69,9 @@ class LeftSidebar extends StatelessWidget {
             label,
             style: TextStyle(
               color: isSelected ? Colors.cyan : Colors.cyan.withOpacity(0.8),
-              fontSize: 16,
+              fontSize: isCompact ? 14 : 16,
               fontWeight: FontWeight.bold,
-              letterSpacing: 1.5,
+              letterSpacing: isCompact ? 1.0 : 1.5,
             ),
           ),
         ),

@@ -4,12 +4,17 @@ import 'dart:io';
 import 'dart:typed_data';
 import 'parser.dart';
 
+
 class WebSocketService {
   late RawDatagramSocket _socket;
   late final Stream<Map<String, dynamic>> rawStream;
-  late StreamController<Map<String, dynamic>> _ctrl;
+  late final StreamController<Map<String, dynamic>> _ctrl;
   InternetAddress? _serverAddress;
   int _serverPort = 8080;
+
+  WebSocketService() : _ctrl = StreamController<Map<String, dynamic>>() {
+    rawStream = _ctrl.stream.asBroadcastStream();
+  }
 
   Future<void> connect(String wsUrl) async {
     final uri = Uri.parse(wsUrl.replaceFirst('ws://', 'udp://').replaceFirst('wss://', 'udp://'));
@@ -21,9 +26,6 @@ class WebSocketService {
     } catch (e) {
       _serverAddress = uri.host == 'localhost' ? InternetAddress.loopbackIPv4 : InternetAddress(uri.host);
     }
-
-    _ctrl = StreamController<Map<String, dynamic>>();
-    rawStream = _ctrl.stream.asBroadcastStream();
 
     _socket = await RawDatagramSocket.bind(InternetAddress.anyIPv4, 0);
     _socket.listen((event) {

@@ -83,7 +83,16 @@ const pushInterval = setInterval(() => {
     const connectionMap = { 'DISCONNECTED': 0, 'CONNECTED': 1 };
     const modeMap = { 'MANUAL': 0, 'AUTO': 1 };
 
-    const buf = Buffer.alloc(7);
+    const internalTemp = payloadObj['internalTemp'] || '0°C';
+    const ipAddress = payloadObj['ipAddress'] || '0.0.0.0';
+    const firmwareVersion = payloadObj['firmwareVersion'] || 'v1.0.0';
+
+    const tempBuf = Buffer.from(internalTemp, 'utf8');
+    const ipBuf = Buffer.from(ipAddress, 'utf8');
+    const fwBuf = Buffer.from(firmwareVersion, 'utf8');
+
+    const totalSize = 9 + 1 + tempBuf.length + 1 + ipBuf.length + 1 + fwBuf.length;
+    const buf = Buffer.alloc(totalSize);
     let offset = 0;
 
     const status = payloadObj['systemStatus'] || 'OFFLINE';
@@ -102,23 +111,47 @@ const pushInterval = setInterval(() => {
     const memNum = parseInt(memStr);
     buf.writeUInt16BE(Math.min(memNum, 100), offset); offset += 2;
 
+    const storagePercent = payloadObj['storagePercent'] || 0;
+    buf.writeUInt8(Math.max(0, Math.min(storagePercent, 100)), offset); offset += 1;
+
+    const signalStrength = payloadObj['signalStrength'] || -65;
+    buf.writeInt8(signalStrength, offset); offset += 1;
+
+    buf.writeUInt8(tempBuf.length, offset); offset += 1;
+    tempBuf.copy(buf, offset);
+    offset += tempBuf.length;
+
+    buf.writeUInt8(ipBuf.length, offset); offset += 1;
+    ipBuf.copy(buf, offset);
+    offset += ipBuf.length;
+
+    buf.writeUInt8(fwBuf.length, offset); offset += 1;
+    fwBuf.copy(buf, offset);
+    offset += fwBuf.length;
+
     try {
-        const headerByte = buf.readUInt8(0);
-        const statusCode = (headerByte >> 2) & 0x03;
-        const connCode = headerByte & 0x03;
+        const hdrByte = buf.readUInt8(0);
+        const statusCode = (hdrByte >> 2) & 0x03;
+        const connCode = hdrByte & 0x03;
         const modeValue = buf.readUInt16BE(1);
         const cpuValue = buf.readUInt16BE(3);
         const memValue = buf.readUInt16BE(5);
+        const storagePct = buf.readUInt8(7);
+        const signalDBm = buf.readInt8(8);
         
         console.log('\n=== BINARY PAYLOAD STRUCTURE ===');
-        console.log(`Byte 0:   [Header] = 0x${buf.readUInt8(0).toString(16).padStart(2, '0')} (status=${statusCode}, conn=${connCode})`);
-        console.log(`Byte 1-2: [Mode]   = 0x${modeValue.toString(16).padStart(4, '0')} (${modeValue})`);
-        console.log(`Byte 3-4: [CPU]    = 0x${cpuValue.toString(16).padStart(4, '0')} (${cpuValue}%)`);
-        console.log(`Byte 5-6: [Memory] = 0x${memValue.toString(16).padStart(4, '0')} (${memValue}%)`);
+        console.log(`Byte 0:   [Header]     = 0x${buf.readUInt8(0).toString(16).padStart(2, '0')} (status=${statusCode}, conn=${connCode})`);
+        console.log(`Byte 1-2: [Mode]       = 0x${modeValue.toString(16).padStart(4, '0')} (${modeValue})`);
+        console.log(`Byte 3-4: [CPU]        = 0x${cpuValue.toString(16).padStart(4, '0')} (${cpuValue}%)`);
+        console.log(`Byte 5-6: [Memory]     = 0x${memValue.toString(16).padStart(4, '0')} (${memValue}%)`);
+        console.log(`Byte 7:   [Storage]    = ${storagePct}%`);
+        console.log(`Byte 8:   [Signal]     = ${signalDBm} dBm`);
+        console.log(`Byte 9+:  [Ext Str]    = ${internalTemp}, ${ipAddress}, ${firmwareVersion}`);
+        console.log(`Total Size: ${totalSize} bytes`);
         console.log(`Full Hex: ${buf.toString('hex')}`);
         console.log('================================\n');
     } catch (e) {
-        console.log('sending buf (length): 7 bytes');
+        console.log(`sending buf (length): ${totalSize} bytes`);
     }
 
     if (clients.size === 0) {
@@ -133,7 +166,7 @@ const pushInterval = setInterval(() => {
             }
         });
     }
-    console.log('Sent binary payload to', clients.size, 'client(s): 7 bytes');
+    console.log(`Sent binary payload to ${clients.size} client(s): ${totalSize} bytes`);
 }, 1000);
 
 process.on('SIGINT', () => {

@@ -7,6 +7,11 @@ class TelemetryPacket {
   final String activeMode;
   final int cpuUsage;
   final int memoryUsage;
+  final int storagePercent;
+  final String internalTemp;
+  final String ipAddress;
+  final int signalStrength;
+  final String firmwareVersion;
 
   const TelemetryPacket({
     required this.systemStatus,
@@ -14,11 +19,16 @@ class TelemetryPacket {
     required this.activeMode,
     required this.cpuUsage,
     required this.memoryUsage,
+    required this.storagePercent,
+    required this.internalTemp,
+    required this.ipAddress,
+    required this.signalStrength,
+    required this.firmwareVersion,
   });
 
   factory TelemetryPacket.fromBytes(Uint8List bytes) {
     if (bytes.isEmpty || bytes.length < 7) {
-      throw ArgumentError('Invalid packet size: ${bytes.length} (expected 7)');
+      throw ArgumentError('Invalid packet size: ${bytes.length} (expected minimum 7)');
     }
 
     final data = ByteData.sublistView(bytes);
@@ -36,12 +46,56 @@ class TelemetryPacket {
     final cpuUsage = data.getUint16(3, Endian.big);
     final memoryUsage = data.getUint16(5, Endian.big);
 
+    int storagePercent = 0;
+    String internalTemp = 'N/A';
+    String ipAddress = 'N/A';
+    int signalStrength = -100;
+    String firmwareVersion = 'N/A';
+
+    if (bytes.length >= 9) {
+      storagePercent = data.getUint8(7);
+      signalStrength = data.getInt8(8);
+
+      int offset = 9;
+      
+      if (offset < bytes.length) {
+        final tempLen = data.getUint8(offset);
+        offset += 1;
+        if (offset + tempLen <= bytes.length) {
+          internalTemp = utf8.decode(bytes.sublist(offset, offset + tempLen));
+          offset += tempLen;
+        }
+      }
+
+      if (offset < bytes.length) {
+        final ipLen = data.getUint8(offset);
+        offset += 1;
+        if (offset + ipLen <= bytes.length) {
+          ipAddress = utf8.decode(bytes.sublist(offset, offset + ipLen));
+          offset += ipLen;
+        }
+      }
+
+      if (offset < bytes.length) {
+        final fwLen = data.getUint8(offset);
+        offset += 1;
+        if (offset + fwLen <= bytes.length) {
+          firmwareVersion = utf8.decode(bytes.sublist(offset, offset + fwLen));
+        }
+      }
+    }
+
     return TelemetryPacket(
       systemStatus: systemStatus,
       connectionState: connectionState,
       activeMode: activeMode,
       cpuUsage: cpuUsage,
       memoryUsage: memoryUsage,
+      storagePercent: storagePercent,
+      internalTemp: internalTemp,
+      ipAddress: ipAddress,
+      signalStrength: signalStrength,
+      firmwareVersion: firmwareVersion,
     );
   }
 
@@ -83,12 +137,19 @@ class TelemetryPacket {
       'activeMode': activeMode,
       'cpuUsage': cpuUsage,
       'memoryUsage': memoryUsage,
+      'storagePercent': storagePercent,
+      'internalTemp': internalTemp,
+      'ipAddress': ipAddress,
+      'signalStrength': signalStrength,
+      'firmwareVersion': firmwareVersion,
     };
   }
 
   @override
   String toString() {
     return 'TelemetryPacket(status: $systemStatus, conn: $connectionState, '
-           'mode: $activeMode, cpu: $cpuUsage%, mem: $memoryUsage%)';
+           'mode: $activeMode, cpu: $cpuUsage%, mem: $memoryUsage%, '
+           'storage: $storagePercent%, temp: $internalTemp, ip: $ipAddress, '
+           'signal: $signalStrength dBm, fw: $firmwareVersion)';
   }
 }
