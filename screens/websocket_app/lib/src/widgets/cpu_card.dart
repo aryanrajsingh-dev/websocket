@@ -48,7 +48,7 @@ class CpuCard extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                'Processor load',
+                'Processor Load',
                 style: TextStyle(
                   color: AppTheme.textSecondary.withOpacity(0.7),
                   fontSize: 11,
