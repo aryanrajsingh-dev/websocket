@@ -152,18 +152,20 @@ class NetworkDetailsBox extends StatelessWidget {
           );
         }
 
+        final labelText = isNarrow ? 'Signal\nStrength' : 'Signal Strength';
+
         return Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            const Flexible(
+            Flexible(
               child: Text(
-                'Signal Strength',
-                style: TextStyle(
+                labelText,
+                style: const TextStyle(
                   color: Colors.white70,
                   fontSize: 13,
                 ),
-                overflow: TextOverflow.ellipsis,
+                softWrap: true,
               ),
             ),
             const SizedBox(width: 8),
