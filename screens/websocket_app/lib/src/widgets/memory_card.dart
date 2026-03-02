@@ -68,7 +68,7 @@ class MemoryCard extends StatelessWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
               LayoutBuilder(
                 builder: (context, constraints) {
                   return TweenAnimationBuilder<double>(
@@ -103,7 +103,9 @@ class MemoryCard extends StatelessWidget {
                   );
                 },
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 8),
+              const _MemoryUsageLegend(),
+              const SizedBox(height: 8),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -135,5 +137,83 @@ class MemoryCard extends StatelessWidget {
     if (percent < 60) return const Color(0xFF00E676);
     if (percent < 85) return const Color(0xFFFFC107);
     return const Color(0xFFFF5252);
+  }
+}
+
+class _MemoryUsageLegend extends StatelessWidget {
+  const _MemoryUsageLegend();
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: const [
+        _MemoryLegendItem(
+          color: Color(0xFF00E676),
+          label: 'Healthy',
+          range: '0-59%',
+        ),
+        _MemoryLegendItem(
+          color: Color(0xFFFFC107),
+          label: 'Warning',
+          range: '60-84%',
+        ),
+        _MemoryLegendItem(
+          color: Color(0xFFFF5252),
+          label: 'Critical',
+          range: '85-100%',
+        ),
+      ],
+    );
+  }
+}
+
+class _MemoryLegendItem extends StatelessWidget {
+  final Color color;
+  final String label;
+  final String range;
+
+  const _MemoryLegendItem({
+    required this.color,
+    required this.label,
+    required this.range,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 18,
+          height: 6,
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(3),
+          ),
+        ),
+        const SizedBox(width: 6),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              label,
+              style: const TextStyle(
+                color: AppTheme.textPrimary,
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            Text(
+              range,
+              style: TextStyle(
+                color: AppTheme.textSecondary.withOpacity(0.7),
+                fontSize: 10,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
   }
 }

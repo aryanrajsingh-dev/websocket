@@ -56,41 +56,49 @@ class CpuCard extends StatelessWidget {
               ),
               const SizedBox(height: 20),
               Center(
-                child: SizedBox(
-                  width: 110,
-                  height: 110,
-                  child: TweenAnimationBuilder<double>(
-                    tween: Tween<double>(
-                      begin: 0,
-                      end: clamped / 100,
-                    ),
-                    duration: const Duration(milliseconds: 600),
-                    curve: Curves.easeOutCubic,
-                    builder: (context, value, _) {
-                      final ringColor = _cpuUsageColor(clamped.toInt());
-                      return Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          SizedBox.expand(
-                            child: CustomPaint(
-                              painter: _CpuRingPainter(
-                                progress: value,
-                                color: ringColor,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    SizedBox(
+                      width: 110,
+                      height: 110,
+                      child: TweenAnimationBuilder<double>(
+                        tween: Tween<double>(
+                          begin: 0,
+                          end: clamped / 100,
+                        ),
+                        duration: const Duration(milliseconds: 600),
+                        curve: Curves.easeOutCubic,
+                        builder: (context, value, _) {
+                          final ringColor = _cpuUsageColor(clamped.toInt());
+                          return Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              SizedBox.expand(
+                                child: CustomPaint(
+                                  painter: _CpuRingPainter(
+                                    progress: value,
+                                    color: ringColor,
+                                  ),
+                                ),
                               ),
-                            ),
-                          ),
-                          Text(
-                            '${(value * 100).round()}%',
-                            style: const TextStyle(
-                              color: AppTheme.textPrimary,
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      );
-                    },
-                  ),
+                              Text(
+                                '${(value * 100).round()}%',
+                                style: const TextStyle(
+                                  color: AppTheme.textPrimary,
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          );
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    const _CpuUsageLegend(),
+                  ],
                 ),
               ),
             ],
@@ -160,4 +168,85 @@ Color _cpuUsageColor(int percent) {
     return Colors.orangeAccent;
   }
   return Colors.redAccent;
+}
+
+class _CpuUsageLegend extends StatelessWidget {
+  const _CpuUsageLegend();
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: const [
+        _LegendItem(
+          color: Colors.greenAccent,
+          label: 'Low',
+          range: '0-49%',
+        ),
+        SizedBox(height: 6),
+        _LegendItem(
+          color: Colors.orangeAccent,
+          label: 'Moderate',
+          range: '50-79%',
+        ),
+        SizedBox(height: 6),
+        _LegendItem(
+          color: Colors.redAccent,
+          label: 'High',
+          range: '80-100%',
+        ),
+      ],
+    );
+  }
+}
+
+class _LegendItem extends StatelessWidget {
+  final Color color;
+  final String label;
+  final String range;
+
+  const _LegendItem({
+    required this.color,
+    required this.label,
+    required this.range,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 10,
+          height: 20,
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.9),
+            borderRadius: BorderRadius.circular(4),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              label,
+              style: const TextStyle(
+                color: AppTheme.textPrimary,
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            Text(
+              range,
+              style: TextStyle(
+                color: AppTheme.textSecondary.withOpacity(0.7),
+                fontSize: 10,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
 }
