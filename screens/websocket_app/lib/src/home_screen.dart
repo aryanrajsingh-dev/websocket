@@ -5,9 +5,9 @@ import 'widgets/network_details_box.dart';
 import 'widgets/top_header.dart';
 import 'widgets/storage_status_box.dart';
 import 'widgets/system_status_box.dart';
-import 'widgets/cpu_usage_card.dart';
-import 'widgets/memory_usage_bar.dart';
 import 'widgets/star_field_painter.dart';
+import 'widgets/cpu_card.dart';
+import 'widgets/memory_card.dart';
 import 'models/display_model.dart';
 import '../src/ws_service.dart';
 
@@ -95,9 +95,11 @@ class _HomeScreenState extends State<HomeScreen> {
             painter: StarFieldPainter(),
             child: Container(),
           ),
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final isSmallScreen = constraints.maxWidth < 600;
+          Builder(
+            builder: (context) {
+              final width = MediaQuery.of(context).size.width;
+              final isSmallScreen = width < 700;
+
               return Column(
                 children: [
                   TopHeader(
@@ -108,7 +110,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   Expanded(
                     child: isSmallScreen
                         ? SingleChildScrollView(
-                            child: _buildMainContent(),
+                            padding:
+                                const EdgeInsets.fromLTRB(24, 0, 24, 24),
+                            child: _buildDashboardGrid(false),
                           )
                         : Row(
                             children: [
@@ -126,6 +130,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               Expanded(
                                 child: Container(
                                   margin: const EdgeInsets.all(16),
+                                  constraints: const BoxConstraints.expand(),
                                   decoration: BoxDecoration(
                                     borderRadius: BorderRadius.circular(16),
                                     boxShadow: [
@@ -142,7 +147,13 @@ class _HomeScreenState extends State<HomeScreen> {
                                       width: 2,
                                     ),
                                   ),
-                                  child: _buildMainContent(),
+                                  child: Padding(
+                                    padding: const EdgeInsets.fromLTRB(
+                                        24, 0, 24, 24),
+                                    child: SingleChildScrollView(
+                                      child: _buildDashboardGrid(true),
+                                    ),
+                                  ),
                                 ),
                               ),
                             ],
@@ -157,87 +168,105 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildMainContent() {
-    if (_selectedMenu != 'SYS') {
-      return Container(
-        color: Colors.black,
-        child: Center(
-          child: Text(
-            '$_selectedMenu Screen',
-            style: const TextStyle(
-              color: Colors.cyan,
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-            ),
+  Widget _buildDashboardGrid(bool isDesktopWidth) {
+    final systemCard = _buildSystemStatusBox();
+    final networkCard = NetworkDetailsBox(
+      ipAddress: _displayModel?.ipAddress ?? '',
+      signalStrength: _displayModel?.signalStrength ?? 0,
+      latency: '45ms',
+    );
+    final storageCard = StorageStatusBox(
+      storagePercent: _displayModel?.storagePercent ?? 0,
+      diskUsedGB: '128',
+      diskTotalGB: '256',
+      writeSpeedMBs: '450',
+    );
+
+    Widget topRow;
+    if (isDesktopWidth) {
+      const double topRowHeight = 210;
+      topRow = Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            flex: 2,
+            child: SizedBox(height: topRowHeight, child: systemCard),
           ),
-        ),
+          const SizedBox(width: 24),
+          Expanded(
+            flex: 1,
+            child: SizedBox(height: topRowHeight, child: networkCard),
+          ),
+          const SizedBox(width: 24),
+          Expanded(
+            flex: 1,
+            child: SizedBox(height: topRowHeight, child: storageCard),
+          ),
+        ],
+      );
+    } else {
+      topRow = Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          systemCard,
+          const SizedBox(height: 24),
+          networkCard,
+          const SizedBox(height: 24),
+          storageCard,
+        ],
       );
     }
 
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          return Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Flexible(
-                flex: 2,
-                child: SingleChildScrollView(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      _buildSystemStatusBox(),
-                      
-                      const SizedBox(height: 20),
-                      CpuUsageCard(displayModel: _displayModel),
-                      const SizedBox(height: 20),
-                    ],
-                  ),
-                ),
+    Widget perfRow;
+    if (isDesktopWidth) {
+      const double bottomRowHeight = 220;
+      perfRow = Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            flex: 4,
+            child: SizedBox(
+              height: bottomRowHeight,
+              child: CpuCard(
+                cpuUsage: _displayModel?.cpuUsage ?? 0,
               ),
-              const SizedBox(width: 20),
-              Flexible(
-                flex: 3,
-                child: SingleChildScrollView(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Row(
-                        children: [
-                          Flexible(
-                            flex: 1,
-                            child: NetworkDetailsBox(
-                                ipAddress: _displayModel?.ipAddress ?? '',
-                                signalStrength:
-                                  _displayModel?.signalStrength ?? 0,
-                              latency: '45ms',
-                            ),
-                          ),
-                          const SizedBox(width: 20),
-                          Flexible(
-                            flex: 1,
-                            child: StorageStatusBox(
-                                storagePercent:
-                                  _displayModel?.storagePercent ?? 0,
-                              diskUsedGB: '128',
-                              diskTotalGB: '256',
-                              writeSpeedMBs: '450',
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 20),
-                      MemoryUsageBar(displayModel: _displayModel),
-                      const SizedBox(height: 20),
-                    ],
-                  ),
-                ),
+            ),
+          ),
+          const SizedBox(width: 24),
+          Expanded(
+            flex: 6,
+            child: SizedBox(
+              height: bottomRowHeight,
+              child: MemoryCard(
+                memoryUsage: _displayModel?.memoryUsage ?? 0,
               ),
-            ],
-          );
-        },
-      ),
+            ),
+          ),
+        ],
+      );
+    } else {
+      perfRow = Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          CpuCard(
+            cpuUsage: _displayModel?.cpuUsage ?? 0,
+          ),
+          const SizedBox(height: 24),
+          MemoryCard(
+            memoryUsage: _displayModel?.memoryUsage ?? 0,
+          ),
+        ],
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const SizedBox(height: 16),
+        topRow,
+        const SizedBox(height: 24),
+        perfRow,
+      ],
     );
   }
 

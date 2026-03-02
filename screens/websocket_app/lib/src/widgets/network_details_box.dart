@@ -91,23 +91,49 @@ class NetworkDetailsBox extends StatelessWidget {
   }
 
   Widget _buildSignalRow(int dBm, String label, Color color) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        const Flexible(
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isNarrow = constraints.maxWidth < 220;
+
+        Widget chip = Container(
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.2),
+            border: Border.all(color: color, width: 0.5),
+            borderRadius: BorderRadius.circular(4),
+          ),
           child: Text(
-            'Signal Strength',
+            label,
             style: TextStyle(
-              color: Colors.white70,
-              fontSize: 13,
+              color: color,
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
             ),
             overflow: TextOverflow.ellipsis,
           ),
-        ),
-        const SizedBox(width: 8),
-        Flexible(
-          child: Row(
+        );
+
+        Widget trailing;
+        if (isNarrow) {
+          trailing = Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                '$dBm dBm',
+                style: TextStyle(
+                  color: color,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  fontFamily: 'monospace',
+                ),
+              ),
+              const SizedBox(height: 4),
+              chip,
+            ],
+          );
+        } else {
+          trailing = Row(
             mainAxisSize: MainAxisSize.min,
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
@@ -121,29 +147,30 @@ class NetworkDetailsBox extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 6),
-              Flexible(
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: color.withOpacity(0.2),
-                    border: Border.all(color: color, width: 0.5),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Text(
-                    label,
-                    style: TextStyle(
-                      color: color,
-                      fontSize: 10,
-                      fontWeight: FontWeight.w600,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ),
+              Flexible(child: chip),
             ],
-          ),
-        ),
-      ],
+          );
+        }
+
+        return Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            const Flexible(
+              child: Text(
+                'Signal Strength',
+                style: TextStyle(
+                  color: Colors.white70,
+                  fontSize: 13,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Flexible(child: trailing),
+          ],
+        );
+      },
     );
   }
 }
