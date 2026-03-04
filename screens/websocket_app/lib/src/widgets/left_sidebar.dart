@@ -13,12 +13,12 @@ class LeftSidebar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final menuItems = [
-      'SYS',
+      'COMPUTE',
     ];
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final isCompact = constraints.maxWidth < 150;
+        final isCompact = true;
         
         return Container(
           decoration: BoxDecoration(
@@ -29,8 +29,8 @@ class LeftSidebar extends StatelessWidget {
           ),
           child: ListView.builder(
             padding: EdgeInsets.symmetric(
-              vertical: 20,
-              horizontal: isCompact ? 8 : 15,
+              vertical: 10,
+              horizontal: 4,
             ),
             itemCount: menuItems.length,
             itemBuilder: (context, index) {
@@ -53,14 +53,14 @@ class LeftSidebar extends StatelessWidget {
       onTap: () => onMenuSelected(label),
       child: Container(
         padding: EdgeInsets.symmetric(
-          vertical: isCompact ? 12 : 15,
-          horizontal: isCompact ? 4 : 0,
+          vertical: 8,
+          horizontal: 2,
         ),
         decoration: BoxDecoration(
           color: isSelected ? Colors.cyan.withOpacity(0.3) : Colors.transparent,
           border: Border.all(
             color: isSelected ? Colors.cyan : Colors.cyan.withOpacity(0.5),
-            width: 2,
+            width: 1.5,
           ),
           borderRadius: BorderRadius.circular(8),
         ),
@@ -69,9 +69,9 @@ class LeftSidebar extends StatelessWidget {
             label,
             style: TextStyle(
               color: isSelected ? Colors.cyan : Colors.cyan.withOpacity(0.8),
-              fontSize: isCompact ? 14 : 16,
+                fontSize: 12,
               fontWeight: FontWeight.bold,
-              letterSpacing: isCompact ? 1.0 : 1.5,
+              letterSpacing: 1.0,
             ),
           ),
         ),

@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 import 'parser.dart';
+import 'binary_codec.dart';
 
 
 class WebSocketService {
@@ -11,9 +12,33 @@ class WebSocketService {
   late final StreamController<Map<String, dynamic>> _ctrl;
   InternetAddress? _serverAddress;
   int _serverPort = 8080;
+  late final TelemetryStreamParser _mavParser;
 
   WebSocketService() : _ctrl = StreamController<Map<String, dynamic>>() {
     rawStream = _ctrl.stream.asBroadcastStream();
+
+    final dialect = DefaultTelemetryDialect(
+      telemetryMessageId: 1,
+      telemetryCrcExtra: 50,
+    );
+    _mavParser = TelemetryStreamParser(dialect);
+
+    _mavParser.stream.listen((frame) {
+      final packet = frame.packet;
+      _ctrl.add({
+        'type': 'data',
+        'systemStatus': packet.systemStatus,
+        'connectionState': packet.connectionState,
+        'activeMode': packet.activeMode,
+        'cpuUsage': packet.cpuUsage,
+        'memoryUsage': packet.memoryUsage,
+        'storagePercent': packet.storagePercent,
+        'internalTemp': packet.internalTemp,
+        'ipAddress': packet.ipAddress,
+        'signalStrength': packet.signalStrength,
+        'firmwareVersion': packet.firmwareVersion,
+      });
+    });
   }
 
   Future<void> connect(String wsUrl) async {
@@ -32,10 +57,9 @@ class WebSocketService {
       if (event == RawSocketEvent.read) {
         final dg = _socket.receive();
         if (dg == null) return;
-        final data = dg.data;
-        final parsed = MessageParser.parse(Uint8List.fromList(data));
-        print('[UDPSvc] recv from ${dg.address}:${dg.port} -> ${parsed}');
-        _ctrl.add(parsed);
+        final data = Uint8List.fromList(dg.data);
+        _mavParser.parse(data);
+        print('[UDPSvc] recv from ${dg.address}:${dg.port} -> ${data.length} bytes');
       }
     });
 

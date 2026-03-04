@@ -13,12 +13,12 @@ class ModeIndicator extends StatelessWidget {
     return CustomPaint(
       painter: HexagonalBorderPainter(),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 12),
+		padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         child: Text(
           'MODE: $mode',
           style: const TextStyle(
             color: Colors.white,
-            fontSize: 16,
+			fontSize: 14,
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -33,9 +33,9 @@ class HexagonalBorderPainter extends CustomPainter {
     final paint = Paint()
       ..color = Colors.cyan
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.0;
+      ..strokeWidth = 1.8;
 
-    const cutSize = 15.0;
+    const cutSize = 12.0;
     final path = Path();
     
     path.moveTo(0, 0);

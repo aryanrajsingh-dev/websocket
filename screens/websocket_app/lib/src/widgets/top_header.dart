@@ -20,33 +20,33 @@ class TopHeader extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final isCompact = constraints.maxWidth < 800;
-        final gap = isCompact ? 12.0 : 30.0;
-
-        final titleWidget = Text(
-          'SCOUT MK1.1',
-          style: TextStyle(
-            color: Colors.cyan,
-            fontSize: isCompact ? 18 : 22,
-            fontWeight: FontWeight.bold,
-            letterSpacing: 1.2,
-          ),
-        );
+        final gap = isCompact ? 10.0 : 24.0;
 
         final modeWidget = ModeIndicator(mode: 'SAFE HOLD');
+
+        final scoutWidget = Text(
+          'SCOUT MK1.1',
+          style: TextStyle(
+            color: Colors.white70,
+			fontSize: isCompact ? 11 : 13,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 1.4,
+          ),
+        );
 
         final uptimeWidget = _buildInfoItem('UP TIME', TimeFormatter.formatUpTime(upTime));
 
         final wifiWidget = Icon(
           Icons.wifi,
           color: wifiConnected ? Colors.cyan : Colors.grey,
-          size: 28,
+          size: isCompact ? 20 : 24,
         );
 
         final dateTimeWidget = Text(
           '${TimeFormatter.getCurrentDate()}  ${TimeFormatter.getCurrentTime()}',
           style: TextStyle(
             color: Colors.white,
-            fontSize: isCompact ? 16 : 18,
+            fontSize: isCompact ? 13 : 16,
             fontWeight: FontWeight.bold,
           ),
           overflow: TextOverflow.fade,
@@ -61,7 +61,7 @@ class TopHeader extends StatelessWidget {
         if (isVeryNarrow) {
           return Container(
             width: double.infinity,
-            padding: EdgeInsets.symmetric(horizontal: isCompact ? 12 : 20, vertical: 15),
+			padding: EdgeInsets.fromLTRB(isCompact ? 10 : 18, 6, isCompact ? 6 : 14, 6),
             decoration: BoxDecoration(
               color: Colors.black,
               border: Border(
@@ -72,8 +72,8 @@ class TopHeader extends StatelessWidget {
               scrollDirection: Axis.horizontal,
               child: Row(
                 children: [
-                  titleWidget,
-                  SizedBox(width: gap),
+                  scoutWidget,
+                  const SizedBox(width: 8),
                   modeWidget,
                   SizedBox(width: gap),
                   uptimeWidget,
@@ -93,7 +93,7 @@ class TopHeader extends StatelessWidget {
         // automatically share the available space.
         return Container(
           width: double.infinity,
-          padding: EdgeInsets.symmetric(horizontal: isCompact ? 16 : 24, vertical: 15),
+		  padding: EdgeInsets.fromLTRB(isCompact ? 12 : 20, 6, isCompact ? 6 : 14, 6),
           decoration: BoxDecoration(
             color: Colors.black,
             border: Border(
@@ -106,8 +106,8 @@ class TopHeader extends StatelessWidget {
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  titleWidget,
-                  SizedBox(width: gap),
+                  scoutWidget,
+                  const SizedBox(width: 8),
                   modeWidget,
                 ],
               ),
@@ -146,14 +146,14 @@ class TopHeader extends StatelessWidget {
             text: '$label : ',
             style: const TextStyle(
               color: Colors.white70,
-              fontSize: 14,
+              fontSize: 12,
             ),
           ),
           TextSpan(
             text: value,
             style: const TextStyle(
               color: Colors.white,
-              fontSize: 14,
+              fontSize: 12,
               fontWeight: FontWeight.bold,
             ),
           ),

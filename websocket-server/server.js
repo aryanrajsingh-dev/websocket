@@ -3,7 +3,7 @@ const path = require('path');
 const dgram = require('dgram');
 
 const cfgPath = path.join(__dirname, 'screens.json');
-let cfg = { port: 8080, screens: [] };
+let cfg = { port: 8080 };
 try {
     const raw = fs.readFileSync(cfgPath, 'utf8');
     cfg = JSON.parse(raw);
@@ -18,6 +18,65 @@ const server = dgram.createSocket('udp4');
 const clients = new Map();
 const telemetry = require('./telemetry');
 
+const MAV_STX_V2 = 0xFD;
+const TELEMETRY_MSG_ID = 1;
+const TELEMETRY_CRC_EXTRA = 50;
+let mavSeq = 0;
+
+function crcAccumulate(crc, value) {
+    let tmp = (value ^ (crc & 0xff)) & 0xff;
+    tmp ^= (tmp << 4) & 0xff;
+    return (((crc >> 8) ^ (tmp << 8) ^ (tmp << 3) ^ (tmp >> 4)) & 0xffff);
+}
+
+function buildMavlinkV2Frame(payload) {
+    const len = payload.length;
+    const incompatFlags = 0;
+    const compatFlags = 0;
+    const seq = mavSeq & 0xff;
+    mavSeq = (mavSeq + 1) & 0xff;
+    const sysId = 1;
+    const compId = 1;
+
+    const msgId = TELEMETRY_MSG_ID >>> 0;
+    const msgIdLow = msgId & 0xff;
+    const msgIdMid = (msgId >> 8) & 0xff;
+    const msgIdHigh = (msgId >> 16) & 0xff;
+
+    const frameLen = 1 + 1 + 1 + 1 + 1 + 1 + 1 + 3 + len + 2;
+    const frame = Buffer.alloc(frameLen);
+    let o = 0;
+
+    frame.writeUInt8(MAV_STX_V2, o++);
+    frame.writeUInt8(len, o++);
+    frame.writeUInt8(incompatFlags, o++);
+    frame.writeUInt8(compatFlags, o++);
+    frame.writeUInt8(seq, o++);
+    frame.writeUInt8(sysId, o++);
+    frame.writeUInt8(compId, o++);
+    frame.writeUInt8(msgIdLow, o++);
+    frame.writeUInt8(msgIdMid, o++);
+    frame.writeUInt8(msgIdHigh, o++);
+
+    payload.copy(frame, o);
+    o += len;
+
+    let crc = 0xffff;
+    const headerBytes = [len, incompatFlags, compatFlags, seq, sysId, compId, msgIdLow, msgIdMid, msgIdHigh];
+    for (const b of headerBytes) {
+        crc = crcAccumulate(crc, b & 0xff);
+    }
+    for (let i = 0; i < len; i++) {
+        crc = crcAccumulate(crc, payload[i] & 0xff);
+    }
+    crc = crcAccumulate(crc, TELEMETRY_CRC_EXTRA & 0xff);
+
+    frame.writeUInt8(crc & 0xff, o++);
+    frame.writeUInt8((crc >> 8) & 0xff, o++);
+
+    return frame;
+}
+
 server.on('error', (err) => {
     console.error(`UDP server error:\n${err.stack}`);
     server.close();
@@ -30,41 +89,9 @@ server.on('message', (msg, rinfo) => {
         if (msgType === 0) {
             const key = `${rinfo.address}:${rinfo.port}`;
             clients.set(key, { address: rinfo.address, port: rinfo.port, lastSeen: Date.now() });
-            console.log('Registered client (binary) ', rinfo.address, rinfo.port);
+            console.log('Registered client (binary)', rinfo.address, rinfo.port);
             return;
         }
-        if (msgType === 1) {
-            console.log('Received msgType=1 (screens request) from', rinfo.address, rinfo.port);
-            return;
-        }
-        if (msgType === 3) {
-            try {
-                let offset = 1;
-                const idLen = msg.readUInt8(offset); offset += 1;
-                const idBuf = msg.slice(offset, offset + idLen);
-                const screenId = idBuf.toString();
-                console.log('Received REQUEST_SCREEN for', screenId, 'from', rinfo.address, rinfo.port);
-            } catch (e) {
-                console.error('Failed to parse REQUEST_SCREEN', e);
-            }
-            return;
-        }
-    }
-
-    let req = null;
-    try {
-        req = JSON.parse(msg.toString());
-    } catch (e) {}
-
-    if (req && req.action === 'register') {
-        const key = `${rinfo.address}:${rinfo.port}`;
-        clients.set(key, { address: rinfo.address, port: rinfo.port, lastSeen: Date.now() });
-        const reply = { type: 'registered' };
-        server.send(Buffer.from(JSON.stringify(reply)), rinfo.port, rinfo.address, (err) => {
-            if (err) console.error('Error replying to register:', err);
-        });
-        console.log('Registered client (json)', rinfo.address, rinfo.port);
-        return;
     }
 });
 
@@ -79,13 +106,13 @@ server.bind(PORT);
 const pushInterval = setInterval(() => {
     const payloadObj = telemetry.createPayload();
 
-    const statusMap = { 'OFFLINE': 0, 'IDLE': 1, 'ONLINE': 2 };
-    const connectionMap = { 'DISCONNECTED': 0, 'CONNECTED': 1 };
-    const modeMap = { 'MANUAL': 0, 'AUTO': 1 };
+    const statusMap = { OFFLINE: 0, IDLE: 1, ONLINE: 2 };
+    const connectionMap = { DISCONNECTED: 0, CONNECTED: 1 };
+    const modeMap = { MANUAL: 0, AUTO: 1 };
 
-    const internalTemp = payloadObj['internalTemp'] || '0°C';
-    const ipAddress = payloadObj['ipAddress'] || '0.0.0.0';
-    const firmwareVersion = payloadObj['firmwareVersion'] || 'v1.0.0';
+    const internalTemp = payloadObj.internalTemp || '0°C';
+    const ipAddress = payloadObj.ipAddress || '0.0.0.0';
+    const firmwareVersion = payloadObj.firmwareVersion || 'v1.0.0';
 
     const tempBuf = Buffer.from(internalTemp, 'utf8');
     const ipBuf = Buffer.from(ipAddress, 'utf8');
@@ -95,26 +122,28 @@ const pushInterval = setInterval(() => {
     const buf = Buffer.alloc(totalSize);
     let offset = 0;
 
-    const status = payloadObj['systemStatus'] || 'OFFLINE';
-    const conn = payloadObj['connectionState'] || 'DISCONNECTED';
+    const status = payloadObj.systemStatus || 'OFFLINE';
+    const conn = payloadObj.connectionState || 'DISCONNECTED';
     const headerByte = ((statusMap[status] || 0) << 2) | (connectionMap[conn] || 0);
     buf.writeUInt8(headerByte, offset); offset += 1;
 
-    const mode = payloadObj['activeMode'] || 'MANUAL';
+    const mode = payloadObj.activeMode || 'MANUAL';
     buf.writeUInt16BE(modeMap[mode] || 0, offset); offset += 2;
 
-    const cpuStr = payloadObj['cpuUsage'] || '0%';
-    const cpuNum = parseInt(cpuStr);
+    const cpuVal = Number(payloadObj.cpuUsage);
+    const cpuNum = Number.isFinite(cpuVal) ? cpuVal : 0;
     buf.writeUInt16BE(Math.min(cpuNum, 100), offset); offset += 2;
 
-    const memStr = payloadObj['memoryUsage'] || '0%';
-    const memNum = parseInt(memStr);
+    const memVal = Number(payloadObj.memoryUsage);
+    const memNum = Number.isFinite(memVal) ? memVal : 0;
     buf.writeUInt16BE(Math.min(memNum, 100), offset); offset += 2;
 
-    const storagePercent = payloadObj['storagePercent'] || 0;
+    const storageVal = Number(payloadObj.storagePercent);
+    const storagePercent = Number.isFinite(storageVal) ? storageVal : 0;
     buf.writeUInt8(Math.max(0, Math.min(storagePercent, 100)), offset); offset += 1;
 
-    const signalStrength = payloadObj['signalStrength'] || -65;
+    const signalVal = Number(payloadObj.signalStrength);
+    const signalStrength = Number.isFinite(signalVal) ? signalVal : -65;
     buf.writeInt8(signalStrength, offset); offset += 1;
 
     buf.writeUInt8(tempBuf.length, offset); offset += 1;
@@ -129,46 +158,21 @@ const pushInterval = setInterval(() => {
     fwBuf.copy(buf, offset);
     offset += fwBuf.length;
 
-    try {
-        const hdrByte = buf.readUInt8(0);
-        const statusCode = (hdrByte >> 2) & 0x03;
-        const connCode = hdrByte & 0x03;
-        const modeValue = buf.readUInt16BE(1);
-        const cpuValue = buf.readUInt16BE(3);
-        const memValue = buf.readUInt16BE(5);
-        const storagePct = buf.readUInt8(7);
-        const signalDBm = buf.readInt8(8);
-        const extSlice = buf.slice(9);
-        const extHex = extSlice.toString('hex');
-        
-        console.log('\n=== BINARY PAYLOAD STRUCTURE ===');
-        console.log(`Byte 0:   [Header]     = 0x${buf.readUInt8(0).toString(16).padStart(2, '0')} (status=${statusCode}, conn=${connCode})`);
-        console.log(`Byte 1-2: [Mode]       = 0x${modeValue.toString(16).padStart(4, '0')} (${modeValue})`);
-        console.log(`Byte 3-4: [CPU]        = 0x${cpuValue.toString(16).padStart(4, '0')} (${cpuValue}%)`);
-        console.log(`Byte 5-6: [Memory]     = 0x${memValue.toString(16).padStart(4, '0')} (${memValue}%)`);
-        console.log(`Byte 7:   [Storage]    = 0x${storagePct.toString(16).padStart(2, '0')} (${storagePct}%)`);
-        console.log(`Byte 8:   [Signal]     = 0x${(signalDBm & 0xff).toString(16).padStart(2, '0')} (${signalDBm} dBm)`);
-        console.log(`Byte 9+:  [Ext Raw]    = 0x${extHex}`);
-        console.log(`Total Size: ${totalSize} bytes`);
-        console.log(`Full Hex: ${buf.toString('hex')}`);
-        console.log('================================\n');
-    } catch (e) {
-        console.log(`sending buf (length): ${totalSize} bytes`);
-    }
+    const frame = buildMavlinkV2Frame(buf);
 
     if (clients.size === 0) {
         return;
     }
 
     for (const [key, c] of clients.entries()) {
-        server.send(buf, c.port, c.address, (err) => {
+        server.send(frame, c.port, c.address, (err) => {
             if (err) {
                 console.error('Error sending to', c.address, c.port, err);
                 clients.delete(key);
             }
         });
     }
-    console.log(`Sent binary payload to ${clients.size} client(s): ${totalSize} bytes`);
+    console.log(`Sent MAVLink v2 telemetry frame to ${clients.size} client(s): payload=${totalSize} bytes, frame=${frame.length} bytes`);
 }, 1000);
 
 process.on('SIGINT', () => {

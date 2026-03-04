@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'widgets/left_sidebar.dart';
 import 'widgets/network_details_box.dart';
@@ -10,6 +11,7 @@ import 'widgets/cpu_card.dart';
 import 'widgets/memory_card.dart';
 import 'models/display_model.dart';
 import '../src/ws_service.dart';
+import 'widgets/compute_details_panel.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -20,7 +22,7 @@ class HomeScreen extends StatefulWidget {
 
 
 class _HomeScreenState extends State<HomeScreen> {
-  String _selectedMenu = 'SYS';
+  String _selectedMenu = 'COMPUTE';
 
   DisplayModel? _displayModel;
   late final WebSocketService _wsService;
@@ -34,7 +36,8 @@ class _HomeScreenState extends State<HomeScreen> {
     super.initState();
     _startUpTime();
     _wsService = WebSocketService();
-    _wsService.connect('ws://localhost:8080');
+    final host = Platform.isAndroid ? '10.0.2.2' : 'localhost';
+    _wsService.connect('ws://$host:8080');
     _wsSub = _wsService.rawStream.listen((msg) {
       if (msg['type'] == 'data') {
         setState(() {
@@ -99,6 +102,8 @@ class _HomeScreenState extends State<HomeScreen> {
             builder: (context) {
               final width = MediaQuery.of(context).size.width;
               final isSmallScreen = width < 700;
+              final isCompute = _selectedMenu == 'COMPUTE';
+              final useRowLayout = isCompute || !isSmallScreen;
 
               return Column(
                 children: [
@@ -108,16 +113,11 @@ class _HomeScreenState extends State<HomeScreen> {
                     batteryLevel: 0.85,
                   ),
                   Expanded(
-                    child: isSmallScreen
-                        ? SingleChildScrollView(
-                            padding:
-                                const EdgeInsets.fromLTRB(24, 0, 24, 24),
-                            child: _buildDashboardGrid(false),
-                          )
-                        : Row(
+                    child: useRowLayout
+                        ? Row(
                             children: [
                               SizedBox(
-                                width: 200,
+                                width: 100,
                                 child: LeftSidebar(
                                   selectedMenu: _selectedMenu,
                                   onMenuSelected: (menu) {
@@ -128,35 +128,20 @@ class _HomeScreenState extends State<HomeScreen> {
                                 ),
                               ),
                               Expanded(
-                                child: Container(
-                                  margin: const EdgeInsets.all(16),
-                                  constraints: const BoxConstraints.expand(),
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(16),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.blueAccent
-                                            .withOpacity(0.3),
-                                        blurRadius: 16,
-                                        spreadRadius: 2,
-                                      ),
-                                    ],
-                                    border: Border.all(
-                                      color: Colors.blueAccent
-                                          .withOpacity(0.5),
-                                      width: 2,
-                                    ),
-                                  ),
-                                  child: Padding(
-                                    padding: const EdgeInsets.fromLTRB(
-                                        24, 0, 24, 24),
-                                    child: SingleChildScrollView(
-                                      child: _buildDashboardGrid(true),
-                                    ),
+                                child: Padding(
+								  padding: const EdgeInsets.fromLTRB(
+									  12, 4, 12, 14),
+                                  child: SingleChildScrollView(
+                                    child: _buildDashboardGrid(true),
                                   ),
                                 ),
                               ),
                             ],
+                          )
+                        : SingleChildScrollView(
+                            padding:
+                                const EdgeInsets.fromLTRB(24, 0, 24, 24),
+                            child: _buildDashboardGrid(false),
                           ),
                   ),
                 ],
@@ -169,6 +154,10 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildDashboardGrid(bool isDesktopWidth) {
+    if (_selectedMenu == 'COMPUTE') {
+      return _buildComputeDashboard(isDesktopWidth);
+    }
+
     final systemCard = _buildSystemStatusBox();
     final networkCard = NetworkDetailsBox(
       ipAddress: _displayModel?.ipAddress ?? '',
@@ -272,5 +261,102 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildSystemStatusBox() {
     return SystemStatusBox(displayModel: _displayModel);
+  }
+
+  Widget _buildComputeDashboard(bool isDesktopWidth) {
+    final computePanel = ComputeDetailsPanel(displayModel: _displayModel);
+
+    final cpuCard = CpuCard(cpuUsage: _displayModel?.cpuUsage ?? 0);
+    final memoryCard = MemoryCard(memoryUsage: _displayModel?.memoryUsage ?? 0);
+
+    if (isDesktopWidth) {
+      return Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            flex: 5,
+            child: computePanel,
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            flex: 4,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                cpuCard,
+                const SizedBox(height: 8),
+                memoryCard,
+                const SizedBox(height: 4),
+                _buildSoftwareAndTempRow(),
+              ],
+            ),
+          ),
+        ],
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        computePanel,
+        const SizedBox(height: 16),
+        cpuCard,
+        const SizedBox(height: 12),
+        memoryCard,
+        const SizedBox(height: 8),
+        _buildSoftwareAndTempRow(),
+      ],
+    );
+  }
+
+  Widget _buildSoftwareAndTempRow() {
+    final fw = _displayModel?.firmwareVersion.isNotEmpty == true
+        ? _displayModel!.firmwareVersion
+        : 'v1.2.4-stable';
+    final temp = _displayModel?.internalTemp.isNotEmpty == true
+        ? _displayModel!.internalTemp
+        : 'N/A';
+
+    const labelStyle = TextStyle(
+      color: Colors.white70,
+      fontSize: 11,
+      fontWeight: FontWeight.w600,
+    );
+    const valueStyle = TextStyle(
+      color: Colors.white,
+      fontSize: 11,
+      fontWeight: FontWeight.w500,
+    );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text('Software Version', style: labelStyle),
+            Flexible(
+              child: Text(
+                fw,
+                style: valueStyle,
+                textAlign: TextAlign.right,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text('Temperature', style: labelStyle),
+            Text(
+              temp,
+              style: valueStyle,
+            ),
+          ],
+        ),
+      ],
+    );
   }
 }

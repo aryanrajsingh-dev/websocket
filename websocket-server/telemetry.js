@@ -25,14 +25,18 @@ const telemetry = {
       [this.KEYS.SYSTEM_STATUS]: Math.random() > 0.5 ? 'ONLINE' : 'IDLE',
       [this.KEYS.CONNECTION_STATE]: 'CONNECTED',
       [this.KEYS.ACTIVE_MODE]: Math.random() > 0.5 ? 'AUTO' : 'MANUAL',
-      [this.KEYS.CPU_USAGE]: Math.floor(Math.random() * 100) + '%',
-      [this.KEYS.MEMORY_USAGE]: Math.floor(Math.random() * 100) + '%',
-      [this.KEYS.INTERNAL_TEMP]: (Math.floor(Math.random() * 40) + 30) + '°C',
+      // Numeric percentages to match COMPUTE telemetry spec (0-100)
+      [this.KEYS.CPU_USAGE]: Math.floor(Math.random() * 101),
+      [this.KEYS.MEMORY_USAGE]: Math.floor(Math.random() * 101),
+      // Temperature as human-readable string
+      [this.KEYS.INTERNAL_TEMP]: (Math.floor(Math.random() * 40) + 30) + '\u00b0C',
       [this.KEYS.IP_ADDRESS]: ipAddress,
-      [this.KEYS.STORAGE_PERCENT]: Math.floor(Math.random() * 100),
+      [this.KEYS.STORAGE_PERCENT]: Math.floor(Math.random() * 101),
       [this.KEYS.FIRMWARE_VERSION]: 'v1.2.4-stable',
-      [this.KEYS.SIGNAL_STRENGTH]: -(Math.floor(Math.random() * 50) + 40),
-      [this.KEYS.LATENCY]: latencyMs + 'ms',
+      // WiFi signal strength in dBm (e.g. -45 to -95)
+      [this.KEYS.SIGNAL_STRENGTH]: -(Math.floor(Math.random() * 51) + 45),
+      // Latency in ms (numeric); the UI can format this if needed
+      [this.KEYS.LATENCY]: latencyMs,
     };
   },
 };
