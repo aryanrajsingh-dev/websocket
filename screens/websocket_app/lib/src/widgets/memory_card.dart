@@ -104,34 +104,23 @@ class MemoryCard extends StatelessWidget {
               ),
               const SizedBox(height: 4),
               Row(
-                mainAxisAlignment: MainAxisAlignment.start,
                 children: [
-                  Expanded(
-                    child: Text(
-                      '$usedGb GB / ${totalMemoryGB.toStringAsFixed(0)} GB used',
-                      style: TextStyle(
-                        color: AppTheme.textSecondary.withOpacity(0.75),
-                        fontSize: 11,
-                      ),
-                      maxLines: 1,
-                      softWrap: false,
-                      overflow: TextOverflow.ellipsis,
+                  Text(
+                    '$usedGb GB / ${totalMemoryGB.toStringAsFixed(0)} GB',
+                    style: TextStyle(
+                      color: AppTheme.textSecondary.withOpacity(0.75),
+                      fontSize: 11,
                     ),
                   ),
-                  const SizedBox(width: 6),
-                  Flexible(
-                    child: Text(
-                      'Free $freeGb GB',
-                      style: TextStyle(
-                        color: AppTheme.textSecondary.withOpacity(0.85),
-                        fontSize: 11,
-                        fontWeight: FontWeight.w500,
-                      ),
-                      maxLines: 1,
-                      softWrap: false,
-                      overflow: TextOverflow.ellipsis,
-                      textAlign: TextAlign.right,
+                  const Spacer(),
+                  Text(
+                    'Free $freeGb GB',
+                    style: TextStyle(
+                      color: AppTheme.textSecondary.withOpacity(0.85),
+                      fontSize: 11,
+                      fontWeight: FontWeight.w500,
                     ),
+                    textAlign: TextAlign.right,
                   ),
                 ],
               ),
