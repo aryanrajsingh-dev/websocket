@@ -28,7 +28,7 @@ class TopHeader extends StatelessWidget {
           'SCOUT MK1.1',
           style: TextStyle(
             color: Colors.white70,
-			fontSize: isCompact ? 11 : 13,
+            fontSize: isCompact ? 13 : 16,
             fontWeight: FontWeight.w600,
             letterSpacing: 1.4,
           ),
@@ -60,7 +60,7 @@ class TopHeader extends StatelessWidget {
         if (isVeryNarrow) {
           return Container(
             width: double.infinity,
-			padding: EdgeInsets.fromLTRB(isCompact ? 10 : 18, 6, isCompact ? 6 : 14, 6),
+            padding: EdgeInsets.fromLTRB(isCompact ? 10 : 18, 6, 0, 6),
             decoration: BoxDecoration(
               color: Colors.black,
               border: Border(
@@ -90,7 +90,8 @@ class TopHeader extends StatelessWidget {
 
         return Container(
           width: double.infinity,
-		  padding: EdgeInsets.fromLTRB(isCompact ? 12 : 20, 6, isCompact ? 6 : 14, 6),
+          // No right padding so date/time & battery touch the edge.
+          padding: EdgeInsets.fromLTRB(isCompact ? 12 : 20, 6, 0, 6),
           decoration: BoxDecoration(
             color: Colors.black,
             border: Border(
@@ -123,7 +124,7 @@ class TopHeader extends StatelessWidget {
                         child: dateTimeWidget,
                       ),
                     ),
-                    SizedBox(width: gap),
+                    const SizedBox(width: 4),
                     batteryWidget,
                   ],
                 ),
