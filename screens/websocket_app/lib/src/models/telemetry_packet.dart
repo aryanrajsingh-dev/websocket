@@ -15,44 +15,40 @@ class TelemetryPacket {
   });
 
   factory TelemetryPacket.fromBytes(Uint8List bytes) {
-    if (bytes.isEmpty || bytes.length < 7) {
-      throw ArgumentError('Invalid packet size: ${bytes.length} (expected minimum 7)');
+    if (bytes.isEmpty || bytes.length < 4) {
+      throw ArgumentError('Invalid packet size: ${bytes.length} (expected minimum 4)');
     }
 
     final data = ByteData.sublistView(bytes);
 
-    final cpuUsage = data.getUint16(3, Endian.big);
-    final memoryUsage = data.getUint16(5, Endian.big);
+    final cpuUsage = data.getUint16(0, Endian.big);
+    final memoryUsage = data.getUint16(2, Endian.big);
 
     String temperature = 'N/A';
     String softwareVersion = 'N/A';
 
-    if (bytes.length >= 9) {
-      int offset = 9;
+    int offset = 4;
 
-      if (offset < bytes.length) {
-        final tempLen = data.getUint8(offset);
-        offset += 1;
-        if (offset + tempLen <= bytes.length) {
-          temperature = utf8.decode(bytes.sublist(offset, offset + tempLen));
-          offset += tempLen;
-        }
+    if (offset < bytes.length) {
+      final tempLen = data.getUint8(offset);
+      offset += 1;
+      if (offset + tempLen <= bytes.length) {
+        temperature = utf8.decode(
+          bytes.sublist(offset, offset + tempLen),
+          allowMalformed: true,
+        );
+        offset += tempLen;
       }
+    }
 
-      if (offset < bytes.length) {
-        final ipLen = data.getUint8(offset);
-        offset += 1;
-        if (offset + ipLen <= bytes.length) {
-          offset += ipLen;
-        }
-      }
-
-      if (offset < bytes.length) {
-        final fwLen = data.getUint8(offset);
-        offset += 1;
-        if (offset + fwLen <= bytes.length) {
-          softwareVersion = utf8.decode(bytes.sublist(offset, offset + fwLen));
-        }
+    if (offset < bytes.length) {
+      final fwLen = data.getUint8(offset);
+      offset += 1;
+      if (offset + fwLen <= bytes.length) {
+        softwareVersion = utf8.decode(
+          bytes.sublist(offset, offset + fwLen),
+          allowMalformed: true,
+        );
       }
     }
 

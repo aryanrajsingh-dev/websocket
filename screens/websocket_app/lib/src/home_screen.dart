@@ -6,6 +6,7 @@ import 'widgets/top_header.dart';
 import 'widgets/star_field_painter.dart';
 import 'widgets/cpu_card.dart';
 import 'widgets/memory_card.dart';
+import 'models/display_model.dart';
 import '../src/ws_service.dart';
 import 'widgets/compute_details_panel.dart';
 

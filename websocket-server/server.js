@@ -100,59 +100,40 @@ server.on('listening', () => {
     console.log(`UDP server is listening on ${address.address || '0.0.0.0'}:${address.port}`);
 });
 
-server.bind(PORT);
+server.bind(PORT, '127.0.0.1');
 
 
 const pushInterval = setInterval(() => {
     const payloadObj = telemetry.createPayload();
 
-    const statusMap = { OFFLINE: 0, IDLE: 1, ONLINE: 2 };
-    const connectionMap = { DISCONNECTED: 0, CONNECTED: 1 };
-    const modeMap = { MANUAL: 0, AUTO: 1 };
-
     const internalTemp = payloadObj.temperature || '0°C';
-    const ipAddress = payloadObj.ipAddress || '0.0.0.0';
     const firmwareVersion = payloadObj.softwareVersion || 'v1.0.0';
 
     const tempBuf = Buffer.from(internalTemp, 'utf8');
-    const ipBuf = Buffer.from(ipAddress, 'utf8');
     const fwBuf = Buffer.from(firmwareVersion, 'utf8');
 
-    const totalSize = 9 + 1 + tempBuf.length + 1 + ipBuf.length + 1 + fwBuf.length;
+    // Layout (MAVLink payload):
+    // 0-1: cpuUsage (uint16 BE)
+    // 2-3: memoryUsage (uint16 BE)
+    // 4:   tempLen (uint8)
+    // 5..: temp string bytes (UTF-8)
+    // next: fwLen (uint8)
+    // next: fw string bytes (UTF-8)
+    const totalSize = 4 + 1 + tempBuf.length + 1 + fwBuf.length;
     const buf = Buffer.alloc(totalSize);
     let offset = 0;
 
-    const status = payloadObj.systemStatus || 'OFFLINE';
-    const conn = payloadObj.connectionState || 'DISCONNECTED';
-    const headerByte = ((statusMap[status] || 0) << 2) | (connectionMap[conn] || 0);
-    buf.writeUInt8(headerByte, offset); offset += 1;
-
-    const mode = payloadObj.activeMode || 'MANUAL';
-    buf.writeUInt16BE(modeMap[mode] || 0, offset); offset += 2;
-
     const cpuVal = Number(payloadObj.cpuUsage);
     const cpuNum = Number.isFinite(cpuVal) ? cpuVal : 0;
-    buf.writeUInt16BE(Math.min(cpuNum, 100), offset); offset += 2;
+    buf.writeUInt16BE(Math.max(0, Math.min(cpuNum, 100)), offset); offset += 2;
 
     const memVal = Number(payloadObj.memoryUsage);
     const memNum = Number.isFinite(memVal) ? memVal : 0;
-    buf.writeUInt16BE(Math.min(memNum, 100), offset); offset += 2;
-
-    const storageVal = Number(payloadObj.storagePercent);
-    const storagePercent = Number.isFinite(storageVal) ? storageVal : 0;
-    buf.writeUInt8(Math.max(0, Math.min(storagePercent, 100)), offset); offset += 1;
-
-    const signalVal = Number(payloadObj.signalStrength);
-    const signalStrength = Number.isFinite(signalVal) ? signalVal : -65;
-    buf.writeInt8(signalStrength, offset); offset += 1;
+    buf.writeUInt16BE(Math.max(0, Math.min(memNum, 100)), offset); offset += 2;
 
     buf.writeUInt8(tempBuf.length, offset); offset += 1;
     tempBuf.copy(buf, offset);
     offset += tempBuf.length;
-
-    buf.writeUInt8(ipBuf.length, offset); offset += 1;
-    ipBuf.copy(buf, offset);
-    offset += ipBuf.length;
 
     buf.writeUInt8(fwBuf.length, offset); offset += 1;
     fwBuf.copy(buf, offset);
@@ -172,7 +153,7 @@ const pushInterval = setInterval(() => {
             }
         });
     }
-    console.log(`Sent MAVLink v2 telemetry frame to ${clients.size} client(s): payload=${totalSize} bytes, frame=${frame.length} bytes`);
+    console.log(`Sent MAVLink v2 telemetry frame to ${clients} client(s): payload=${totalSize} bytes, frame=${frame.length} bytes`);
 }, 1000);
 
 process.on('SIGINT', () => {
