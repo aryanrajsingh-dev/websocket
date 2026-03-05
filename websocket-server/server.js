@@ -110,9 +110,9 @@ const pushInterval = setInterval(() => {
     const connectionMap = { DISCONNECTED: 0, CONNECTED: 1 };
     const modeMap = { MANUAL: 0, AUTO: 1 };
 
-    const internalTemp = payloadObj.internalTemp || '0°C';
+    const internalTemp = payloadObj.temperature || '0°C';
     const ipAddress = payloadObj.ipAddress || '0.0.0.0';
-    const firmwareVersion = payloadObj.firmwareVersion || 'v1.0.0';
+    const firmwareVersion = payloadObj.softwareVersion || 'v1.0.0';
 
     const tempBuf = Buffer.from(internalTemp, 'utf8');
     const ipBuf = Buffer.from(ipAddress, 'utf8');

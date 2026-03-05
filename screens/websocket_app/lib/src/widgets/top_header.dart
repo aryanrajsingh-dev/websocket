@@ -55,7 +55,6 @@ class TopHeader extends StatelessWidget {
 
         final batteryWidget = BatteryIndicator(batteryLevel: batteryLevel);
 
-        // On very narrow widths, keep a horizontally scrollable row to avoid overflow.
         final isVeryNarrow = constraints.maxWidth < 700;
 
         if (isVeryNarrow) {
@@ -89,8 +88,6 @@ class TopHeader extends StatelessWidget {
           );
         }
 
-        // On wider screens, split content into left and right clusters that
-        // automatically share the available space.
         return Container(
           width: double.infinity,
 		  padding: EdgeInsets.fromLTRB(isCompact ? 12 : 20, 6, isCompact ? 6 : 14, 6),

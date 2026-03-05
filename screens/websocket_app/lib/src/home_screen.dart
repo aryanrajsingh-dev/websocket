@@ -2,10 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'widgets/left_sidebar.dart';
-import 'widgets/network_details_box.dart';
 import 'widgets/top_header.dart';
-import 'widgets/storage_status_box.dart';
-import 'widgets/system_status_box.dart';
 import 'widgets/star_field_painter.dart';
 import 'widgets/cpu_card.dart';
 import 'widgets/memory_card.dart';
@@ -42,16 +39,10 @@ class _HomeScreenState extends State<HomeScreen> {
       if (msg['type'] == 'data') {
         setState(() {
           _displayModel = DisplayModel(
-            ipAddress: msg['ipAddress'] ?? '',
-            signalStrength: msg['signalStrength'] ?? 0,
-            storagePercent: msg['storagePercent'] ?? 0,
-            systemStatus: msg['systemStatus'] ?? '',
-            connectionState: msg['connectionState'] ?? '',
-            activeMode: msg['activeMode'] ?? '',
-            firmwareVersion: msg['firmwareVersion'] ?? '',
-            internalTemp: msg['internalTemp'] ?? '',
             cpuUsage: msg['cpuUsage'] ?? 0,
             memoryUsage: msg['memoryUsage'] ?? 0,
+            temperature: msg['temperature'] ?? '',
+            softwareVersion: msg['softwareVersion'] ?? '',
           );
         });
       }
@@ -154,113 +145,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildDashboardGrid(bool isDesktopWidth) {
-    if (_selectedMenu == 'COMPUTE') {
-      return _buildComputeDashboard(isDesktopWidth);
-    }
-
-    final systemCard = _buildSystemStatusBox();
-    final networkCard = NetworkDetailsBox(
-      ipAddress: _displayModel?.ipAddress ?? '',
-      signalStrength: _displayModel?.signalStrength ?? 0,
-      latency: '45ms',
-    );
-    final storageCard = StorageStatusBox(
-      storagePercent: _displayModel?.storagePercent ?? 0,
-      diskUsedGB: '128',
-      diskTotalGB: '256',
-      writeSpeedMBs: '450',
-    );
-
-    Widget topRow;
-    if (isDesktopWidth) {
-      const double topRowHeight = 210;
-      topRow = Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            flex: 2,
-            child: SizedBox(height: topRowHeight, child: systemCard),
-          ),
-          const SizedBox(width: 24),
-          Expanded(
-            flex: 1,
-            child: SizedBox(height: topRowHeight, child: networkCard),
-          ),
-          const SizedBox(width: 24),
-          Expanded(
-            flex: 1,
-            child: SizedBox(height: topRowHeight, child: storageCard),
-          ),
-        ],
-      );
-    } else {
-      topRow = Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          systemCard,
-          const SizedBox(height: 24),
-          networkCard,
-          const SizedBox(height: 24),
-          storageCard,
-        ],
-      );
-    }
-
-    Widget perfRow;
-    if (isDesktopWidth) {
-      const double bottomRowHeight = 220;
-      perfRow = Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            flex: 4,
-            child: SizedBox(
-              height: bottomRowHeight,
-              child: CpuCard(
-                cpuUsage: _displayModel?.cpuUsage ?? 0,
-              ),
-            ),
-          ),
-          const SizedBox(width: 24),
-          Expanded(
-            flex: 6,
-            child: SizedBox(
-              height: bottomRowHeight,
-              child: MemoryCard(
-                memoryUsage: _displayModel?.memoryUsage ?? 0,
-              ),
-            ),
-          ),
-        ],
-      );
-    } else {
-      perfRow = Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          CpuCard(
-            cpuUsage: _displayModel?.cpuUsage ?? 0,
-          ),
-          const SizedBox(height: 24),
-          MemoryCard(
-            memoryUsage: _displayModel?.memoryUsage ?? 0,
-          ),
-        ],
-      );
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        const SizedBox(height: 16),
-        topRow,
-        const SizedBox(height: 24),
-        perfRow,
-      ],
-    );
-  }
-
-  Widget _buildSystemStatusBox() {
-    return SystemStatusBox(displayModel: _displayModel);
+    return _buildComputeDashboard(isDesktopWidth);
   }
 
   Widget _buildComputeDashboard(bool isDesktopWidth) {
@@ -310,11 +195,11 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildSoftwareAndTempRow() {
-    final fw = _displayModel?.firmwareVersion.isNotEmpty == true
-        ? _displayModel!.firmwareVersion
+    final fw = _displayModel?.softwareVersion.isNotEmpty == true
+      ? _displayModel!.softwareVersion
         : 'v1.2.4-stable';
-    final temp = _displayModel?.internalTemp.isNotEmpty == true
-        ? _displayModel!.internalTemp
+    final temp = _displayModel?.temperature.isNotEmpty == true
+      ? _displayModel!.temperature
         : 'N/A';
 
     const labelStyle = TextStyle(

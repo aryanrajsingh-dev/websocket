@@ -1,9 +1,8 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
+import 'dialect.dart';
 import 'parser.dart';
-import 'binary_codec.dart';
 
 
 class WebSocketService {
@@ -19,7 +18,6 @@ class WebSocketService {
 
     final dialect = DefaultTelemetryDialect(
       telemetryMessageId: 1,
-      telemetryCrcExtra: 50,
     );
     _mavParser = TelemetryStreamParser(dialect);
 
@@ -27,16 +25,10 @@ class WebSocketService {
       final packet = frame.packet;
       _ctrl.add({
         'type': 'data',
-        'systemStatus': packet.systemStatus,
-        'connectionState': packet.connectionState,
-        'activeMode': packet.activeMode,
         'cpuUsage': packet.cpuUsage,
         'memoryUsage': packet.memoryUsage,
-        'storagePercent': packet.storagePercent,
-        'internalTemp': packet.internalTemp,
-        'ipAddress': packet.ipAddress,
-        'signalStrength': packet.signalStrength,
-        'firmwareVersion': packet.firmwareVersion,
+        'temperature': packet.temperature,
+        'softwareVersion': packet.softwareVersion,
       });
     });
   }
@@ -71,14 +63,6 @@ class WebSocketService {
     final buf = Uint8List.fromList([0]);
     _socket.send(buf, _serverAddress!, _serverPort);
     print('[UDPSvc] sent BINARY REGISTER -> ${_serverAddress}:${_serverPort}');
-  }
-
-  void sendDiscovery() {
-    return;
-  }
-
-  void requestScreen(String screenId) {
-    return;
   }
 
   void dispose() {
