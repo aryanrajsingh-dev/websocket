@@ -107,19 +107,13 @@ const pushInterval = setInterval(() => {
     const payloadObj = telemetry.createPayload();
 
     const internalTemp = payloadObj.temperature || '0°C';
-    const firmwareVersion = payloadObj.softwareVersion || 'v1.0.0';
+    const softwareVersion = payloadObj.softwareVersion || 'v1.0.0';
 
     const tempBuf = Buffer.from(internalTemp, 'utf8');
-    const fwBuf = Buffer.from(firmwareVersion, 'utf8');
+    const swBuf = Buffer.from(softwareVersion, 'utf8');
 
-    // Layout (MAVLink payload):
-    // 0-1: cpuUsage (uint16 BE)
-    // 2-3: memoryUsage (uint16 BE)
-    // 4:   tempLen (uint8)
-    // 5..: temp string bytes (UTF-8)
-    // next: fwLen (uint8)
-    // next: fw string bytes (UTF-8)
-    const totalSize = 4 + 1 + tempBuf.length + 1 + fwBuf.length;
+
+    const totalSize = 4 + 1 + tempBuf.length + 1 + swBuf.length;
     const buf = Buffer.alloc(totalSize);
     let offset = 0;
 
@@ -135,9 +129,9 @@ const pushInterval = setInterval(() => {
     tempBuf.copy(buf, offset);
     offset += tempBuf.length;
 
-    buf.writeUInt8(fwBuf.length, offset); offset += 1;
-    fwBuf.copy(buf, offset);
-    offset += fwBuf.length;
+    buf.writeUInt8(swBuf.length, offset); offset += 1;
+    swBuf.copy(buf, offset);
+    offset += swBuf.length;
 
     const frame = buildMavlinkV2Frame(buf);
 

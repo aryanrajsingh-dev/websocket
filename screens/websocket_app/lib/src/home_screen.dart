@@ -195,8 +195,8 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildSoftwareAndTempRow() {
-    final fw = _displayModel?.softwareVersion.isNotEmpty == true
-      ? _displayModel!.softwareVersion
+    final softwareVersionText = _displayModel?.softwareVersion.isNotEmpty == true
+        ? _displayModel!.softwareVersion
         : 'v1.2.4-stable';
     final temp = _displayModel?.temperature.isNotEmpty == true
       ? _displayModel!.temperature
@@ -222,7 +222,7 @@ class _HomeScreenState extends State<HomeScreen> {
             const Text('Software Version', style: labelStyle),
             Flexible(
               child: Text(
-                fw,
+                softwareVersionText,
                 style: valueStyle,
                 textAlign: TextAlign.right,
                 overflow: TextOverflow.ellipsis,
