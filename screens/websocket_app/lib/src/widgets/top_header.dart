@@ -90,8 +90,7 @@ class TopHeader extends StatelessWidget {
 
         return Container(
           width: double.infinity,
-          // No right padding so date/time & battery touch the edge.
-          padding: EdgeInsets.fromLTRB(isCompact ? 12 : 20, 6, 0, 6),
+          padding: EdgeInsets.fromLTRB(isCompact ? 12 : 20, 6, isCompact ? 12 : 20, 6),
           decoration: BoxDecoration(
             color: Colors.black,
             border: Border(
@@ -99,7 +98,6 @@ class TopHeader extends StatelessWidget {
             ),
           ),
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Row(
                 mainAxisSize: MainAxisSize.min,
@@ -109,25 +107,18 @@ class TopHeader extends StatelessWidget {
                   modeWidget,
                 ],
               ),
-              Flexible(
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  mainAxisSize: MainAxisSize.max,
-                  children: [
-                    Flexible(child: uptimeWidget),
-                    SizedBox(width: gap),
-                    wifiWidget,
-                    SizedBox(width: gap),
-                    Flexible(
-                      child: Align(
-                        alignment: Alignment.centerRight,
-                        child: dateTimeWidget,
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    batteryWidget,
-                  ],
-                ),
+              const Spacer(),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  uptimeWidget,
+                  SizedBox(width: gap),
+                  wifiWidget,
+                  SizedBox(width: gap),
+                  dateTimeWidget,
+                  const SizedBox(width: 4),
+                  batteryWidget,
+                ],
               ),
             ],
           ),

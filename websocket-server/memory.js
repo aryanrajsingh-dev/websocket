@@ -1,6 +1,6 @@
-    const fs = require('fs');
+const fs = require('fs');
 
-  let previousUsage = null;
+let previousUsage = null;
 
 function getMemoryUsagePercent() {
   try {
