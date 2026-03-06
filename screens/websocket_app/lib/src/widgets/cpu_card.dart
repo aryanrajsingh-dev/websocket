@@ -11,6 +11,7 @@ class CpuCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final clamped = cpuUsage.clamp(0, 100);
+    final ringColor = _cpuUsageColor(clamped.toInt());
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(AppTheme.cardRadius),
@@ -51,38 +52,27 @@ class CpuCard extends StatelessWidget {
                 child: SizedBox(
                   width: 70,
                   height: 70,
-                  child: TweenAnimationBuilder<double>(
-                        tween: Tween<double>(
-                          begin: 0,
-                          end: clamped / 100,
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      SizedBox.expand(
+                        child: CustomPaint(
+                          painter: _CpuRingPainter(
+                            progress: clamped / 100,
+                            color: ringColor,
+                          ),
                         ),
-                        duration: const Duration(milliseconds: 600),
-                        curve: Curves.easeOutCubic,
-                        builder: (context, value, _) {
-                          final ringColor = _cpuUsageColor(clamped.toInt());
-                          return Stack(
-                            alignment: Alignment.center,
-                            children: [
-                              SizedBox.expand(
-                                child: CustomPaint(
-                                  painter: _CpuRingPainter(
-                                    progress: value,
-                                    color: ringColor,
-                                  ),
-                                ),
-                              ),
-                              Text(
-                                '${(value * 100).round()}%',
-                                style: const TextStyle(
-                                  color: AppTheme.textPrimary,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
-                          );
-                        },
                       ),
+                      Text(
+                        '$clamped%',
+                        style: const TextStyle(
+                          color: AppTheme.textPrimary,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ],

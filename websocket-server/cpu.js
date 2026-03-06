@@ -1,6 +1,7 @@
 const fs = require('fs');
 
 let previousSample = null;
+let previousUsage = null;
 
 function readCpuSample() {
   const data = fs.readFileSync('/proc/stat', 'utf8');
@@ -51,7 +52,21 @@ function getCpuUsagePercent() {
     if (usage > 100) {
       usage = 100;
     }
-    return Math.round(usage);
+    if (previousUsage != null) {
+      const maxStep = 15;
+      if (usage > previousUsage + maxStep) {
+        usage = previousUsage + maxStep;
+      } else if (usage < previousUsage - maxStep) {
+        usage = previousUsage - maxStep;
+      }
+    }
+    if (previousUsage == null) {
+      previousUsage = usage;
+    } else {
+      const alpha = 0.25;
+      previousUsage = previousUsage + (usage - previousUsage) * alpha;
+    }
+    return Math.round(previousUsage);
   } catch (e) {
     return 0;
   }

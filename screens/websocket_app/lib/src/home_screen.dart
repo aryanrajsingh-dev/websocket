@@ -27,6 +27,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Duration _upTime = Duration.zero;
   Timer? _upTimeTimer;
+  double _batteryLevel = 0.85;
 
   @override
   void initState() {
@@ -55,6 +56,9 @@ class _HomeScreenState extends State<HomeScreen> {
     _upTimeTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       setState(() {
         _upTime += const Duration(seconds: 1);
+        if (_upTime.inSeconds > 0 && _upTime.inSeconds % (4 * 60) == 0) {
+          _batteryLevel = (_batteryLevel - 0.02).clamp(0.0, 1.0);
+        }
       });
     });
   }
@@ -101,7 +105,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   TopHeader(
                     upTime: _upTime,
                     wifiConnected: true,
-                    batteryLevel: 0.85,
+                    batteryLevel: _batteryLevel,
                   ),
                   Expanded(
                     child: useRowLayout

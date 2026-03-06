@@ -1,4 +1,6 @@
-const fs = require('fs');
+    const fs = require('fs');
+
+  let previousUsage = null;
 
 function getMemoryUsagePercent() {
   try {
@@ -34,7 +36,13 @@ function getMemoryUsagePercent() {
     if (usage > 100) {
       usage = 100;
     }
-    return Math.round(usage);
+    if (previousUsage == null) {
+      previousUsage = usage;
+    } else {
+      const alpha = 0.2;
+      previousUsage = previousUsage + (usage - previousUsage) * alpha;
+    }
+    return Math.round(previousUsage);
   } catch (e) {
     return 0;
   }
