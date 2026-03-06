@@ -46,26 +46,78 @@ class ComputeDetailsPanel extends StatelessWidget {
   }
 
   Widget _buildMissionHealthTable() {
-    const items = [
-      'Hardware interface',
-      'CAN Actuator',
-      'CAN Sensor',
-      'RS 485',
-      'Controller',
-      'Localization',
-      'Navigation',
-      'Mission Manager',
-      'Display interface',
-      'Display App',
-      'Logger',
-      'Telemetry',
-      'Scheduler',
+    const modules = [
+      {
+        'name': 'Hardware interface',
+        'active': 'ACTIVE',
+        'inactive': 'INACTIVE',
+      },
+      {
+        'name': 'CAN Actuator',
+        'active': 'ACTIVE',
+        'inactive': 'INACTIVE',
+      },
+      {
+        'name': 'CAN Sensor',
+        'active': 'ACTIVE',
+        'inactive': 'INACTIVE',
+      },
+      {
+        'name': 'RS 485',
+        'active': 'ACTIVE',
+        'inactive': 'INACTIVE',
+      },
+      {
+        'name': 'Controller',
+        'active': 'ACTIVE',
+        'inactive': 'INACTIVE',
+      },
+      {
+        'name': 'Localization',
+        'active': 'ACTIVE',
+        'inactive': 'INACTIVE',
+      },
+      {
+        'name': 'Navigation',
+        'active': 'ACTIVE',
+        'inactive': 'INACTIVE',
+      },
+      {
+        'name': 'Mission Manager',
+        'active': 'ACTIVE',
+        'inactive': 'INACTIVE',
+      },
+      {
+        'name': 'Display interface',
+        'active': 'ACTIVE',
+        'inactive': 'INACTIVE',
+      },
+      {
+        'name': 'Display App',
+        'active': 'ACTIVE',
+        'inactive': 'INACTIVE',
+      },
+      {
+        'name': 'Logger',
+        'active': 'ACTIVE',
+        'inactive': 'INACTIVE',
+      },
+      {
+        'name': 'Telemetry',
+        'active': 'ACTIVE',
+        'inactive': 'INACTIVE',
+      },
+      {
+        'name': 'Scheduler',
+        'active': 'ACTIVE',
+        'inactive': 'INACTIVE',
+      },
     ];
 
     return _buildSimpleTable(
       headers: const ['Module', 'Status'],
-      rows: items
-          .map((name) => [name, 'ACTIVE'])
+      rows: modules
+          .map((m) => [m['name']!, m['active']!])
           .toList(),
     );
   }

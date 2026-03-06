@@ -147,6 +147,12 @@ const pushInterval = setInterval(() => {
             }
         });
     }
+    telemetry.recordActivity({
+        messages: Math.max(1, clients.size),
+        rawBytes: buf.length,
+        frameBytes: frame.length,
+        clientCount: clients.size,
+    });
     console.log(`Sent MAVLink v2 telemetry frame to ${clients} client(s): payload=${totalSize} bytes, frame=${frame.length} bytes`);
 }, 1000);
 
